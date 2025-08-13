@@ -7,6 +7,13 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
+# s.lantsev
+obj
+bin
+.idea
+appsettings.lants.json
+*.user
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

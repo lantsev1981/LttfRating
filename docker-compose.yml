@@ -1,0 +1,6 @@
+﻿services:
+  LttfRating:
+    image: LttfRating
+    build:
+      context: .
+      dockerfile: LttfRating/Dockerfile
