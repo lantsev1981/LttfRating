@@ -13,14 +13,15 @@ public class SetUpdateMessageHandler(
 
     public async Task Handle(SetUpdateMessageCommand request, CancellationToken token)
     {
-        var setValues = ParseMatch(request.Message.Text ?? "");
-        if (setValues == null)
+        var sender = request.Message.From?.Username ?? "";
+        
+        var setValues = ParseMatch(request.Message.Text ?? "", sender);
+        if (setValues == null || !ValueValidation(setValues))
         {
             logger.LogTrace("Сообщение не соответствует паттерну {Pattern}", nameof(ParseMatch));
             return;
         }
-
-        var sender = request.Message.From?.Username ?? "";
+        
         var isAdmin = _config.Administrators.Contains(sender);
         var isGamer = setValues.Select(p => p.Login).Contains(sender);
         if (!isAdmin && !isGamer)
@@ -50,34 +51,55 @@ public class SetUpdateMessageHandler(
         await mediator.Send(new SendResultMessageCommand(request.Message.Chat.Id, matchId), token);
     }
 
-    private static SetValue[]? ParseMatch(string text)
+    private static SetValue[]? ParseMatch(string text, string senderLogin)
     {
-        var match = Regex.Match(text, @"@(\w+)\s+@(\w+)\s+(\d+)\s+(\d+)");
+        SetValue[]? result = null;
+            
+        // Формат 1: @игрок1 @игрок2 11 3
+        var fullMatch = Regex.Match(text, @"^@(\w+)\s+@(\w+)\s+(\d+)\s+(\d+)$");
+        if (fullMatch.Success)
+        {
+            if (!byte.TryParse(fullMatch.Groups[3].Value, out byte points1) ||
+                !byte.TryParse(fullMatch.Groups[4].Value, out byte points2))
+                return null;
 
-        if (!match.Success)
-            return null;
+            result =
+            [
+                new SetValue(fullMatch.Groups[1].Value, points1),
+                new SetValue(fullMatch.Groups[2].Value, points2)
+            ];
+        }
 
-        if (!byte.TryParse(match.Groups[3].Value, out var points1))
-            return null;
+        // Формат 2: @игрок2 11 3
+        // где игрок1 = senderLogin
+        var shortMatch = Regex.Match(text, @"^@(\w+)\s+(\d+)\s+(\d+)$");
+        if (shortMatch.Success)
+        {
+            if (!byte.TryParse(shortMatch.Groups[2].Value, out byte points1) ||
+                !byte.TryParse(shortMatch.Groups[3].Value, out byte points2))
+                return null;
 
-        if (!byte.TryParse(match.Groups[4].Value, out var points2))
-            return null;
+            result =
+            [
+                new SetValue(senderLogin, points1), // отправитель
+                new SetValue(shortMatch.Groups[1].Value, points2)
+            ];
+        }
 
-        SetValue[] result =
-        [
-            new SetValue(match.Groups[1].Value, points1),
-            new SetValue(match.Groups[2].Value, points2)
-        ];
-
-        result = result
+        result = result?
             .OrderByDescending(p => p.Points)
             .ToArray();
         
-        return ValueValidation(result) ? result : null;
+        return result;
     }
 
     private static bool ValueValidation(SetValue[] setValue)
     {
+        // TODO как проверить существует ли пользователь в телеге?
+
+        if (setValue.Any(p => string.IsNullOrWhiteSpace(p.Login)))
+            return false;
+        
         if (setValue[0].Login == setValue[1].Login)
             return false;
         
