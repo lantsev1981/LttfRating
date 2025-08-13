@@ -22,13 +22,13 @@ public class SetUpdateMessageHandler(
 
         var sender = request.Message.From?.Username ?? "";
         var isAdmin = _config.Administrators.Contains(sender);
-        var isLoser = sender == setValues[1].Login;
-        if (!isAdmin && !isLoser)
+        var isGamer = setValues.Select(p => p.Login).Contains(sender);
+        if (!isAdmin && !isGamer)
         {
             await botClient.SendMessage(
                 chatId: request.Message.Chat.Id,
                 text: $"""
-                       @{sender}, результаты матча может отправлять только проигравший!
+                       @{sender}, результаты матча может отправлять только участник партии!
                        Или обратитесь к администратору: {string.Join(',', _config.Administrators.Select(p => $"@{p}"))}
                        """,
                 cancellationToken: token);
