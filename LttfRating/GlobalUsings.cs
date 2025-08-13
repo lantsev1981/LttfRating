@@ -10,6 +10,7 @@ global using Microsoft.EntityFrameworkCore.Design;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Options;
 global using Telegram.Bot;
 global using Telegram.Bot.Exceptions;
 global using Telegram.Bot.Polling;

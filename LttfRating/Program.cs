@@ -28,6 +28,7 @@ class Program
         var services = new ServiceCollection();
         
         services
+            .Configure<ApiConfig>(configuration.GetSection("ApiConfig"))
             .AddLogging(loggingBuilder => 
                 loggingBuilder.AddSerilog(dispose: true))
             .AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly))

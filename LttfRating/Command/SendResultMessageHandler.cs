@@ -1,13 +1,13 @@
 ﻿namespace LttfRating;
 
-public record SendMessageCommand(long ChatId, Guid MatchId) : IRequest;
+public record SendResultMessageCommand(long ChatId, Guid MatchId) : IRequest;
 
-public class SendMessageHandler(
+public class SendResultMessageHandler(
     IDomainStore<Match> store,
     ITelegramBotClient botClient)
-    : IRequestHandler<SendMessageCommand>
+    : IRequestHandler<SendResultMessageCommand>
 {
-    public async Task Handle(SendMessageCommand request, CancellationToken token)
+    public async Task Handle(SendResultMessageCommand request, CancellationToken token)
     {
         var match = await store.GetById(request.MatchId, token)
                     ?? throw new NullReferenceException($"Матч {request.MatchId} не найден");

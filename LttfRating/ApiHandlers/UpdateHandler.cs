@@ -13,11 +13,31 @@ public class UpdateHandler(
             {
                 case UpdateType.Message:
                 {
-                    if (update.Message is null)
+                    if (update.Message?.Text is null)
+                    {
+                        logger.LogTrace("Сообщение не содержит текст");
                         break;
+                    }
 
-                    if (!await HandleAsync(update.Message, token))
-                        logger.LogTrace("Не соответствует паттерну {Pattern}", nameof(ParseMatch));
+                    if (update.Message.From?.Username is null)
+                    {
+                        logger.LogTrace("Сообщение от неизвестного пользователя");
+                        break;
+                    }
+                    
+                    logger.LogTrace("Пришло сообщение: {Text} от @{Username}",
+                        update.Message.Text, update.Message.From?.Username);
+
+                    var commandAndArg = update.Message.Text.Split(' ');
+                    switch (commandAndArg[0])
+                    {
+                        case "/help": 
+                            await mediator.Send(new HelpBotCommand(update.Message), token);
+                            break;
+                        default:
+                            await mediator.Send(new SetUpdateMessageCommand(update.Message), token);
+                            break;
+                    }
                     
                     break;
                 }
@@ -32,51 +52,5 @@ public class UpdateHandler(
         {
             await errorHandler.HandleAsync(botClient, ex, token);
         }
-    }
-
-    private async Task<bool> HandleAsync(Message message, CancellationToken token)
-    {
-        if (message.Text is null)
-            return false;
-
-        logger.LogTrace("Пришло сообщение: {Text} от @{Username}", message.Text, message.From?.Username);
-
-        var setValues = ParseMatch(message.Text);
-        if (setValues == null)
-            return false;
-
-        await mediator.Send(new AddGamerCommand(setValues[0].Login), token);
-        await mediator.Send(new AddGamerCommand(setValues[1].Login), token);
-
-        var matchId = await mediator.Send(new GetOrAddMatchCommand(
-            setValues[0].Login, setValues[1].Login), token);
-        await mediator.Send(new AddSetCommand(matchId, setValues), token);
-        await mediator.Send(new SendMessageCommand(message.Chat.Id, matchId), token);
-
-        return true;
-    }
-
-    static SetValue[]? ParseMatch(string text)
-    {
-        var match = Regex.Match(text, @"@(\w+)\s+@(\w+)\s+(\d+)\s+(\d+)");
-
-        if (!match.Success)
-            return null;
-
-        if (!byte.TryParse(match.Groups[3].Value, out var points1))
-            return null;
-
-        if (!byte.TryParse(match.Groups[4].Value, out var points2))
-            return null;
-
-        SetValue[] result =
-        [
-            new SetValue(match.Groups[1].Value, points1),
-            new SetValue(match.Groups[2].Value, points2)
-        ];
-
-        return result
-            .OrderByDescending(p => p.Points)
-            .ToArray();
     }
 }
