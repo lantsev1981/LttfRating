@@ -13,21 +13,21 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
-      <None Remove="appsettings.json" />
-      <Content Include="appsettings.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <None Remove="appsettings.Development.json" />
-      <Content Include="appsettings.Development.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <None Remove="appsettings.lants.json" />
-      <Content Include="appsettings.lants.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
       <None Update="LttfRatingBotQr.jpg">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Remove="config\appsettings.json" />
+      <Content Include="config\appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <None Remove="config\appsettings.Development.json" />
+      <Content Include="config\appsettings.Development.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <None Remove="config\appsettings.lants.json" />
+      <Content Include="config\appsettings.lants.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>

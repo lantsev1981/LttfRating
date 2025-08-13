@@ -1,6 +1,10 @@
 ﻿services:
   LttfRating:
-    image: LttfRating
+    image: lttf_rating
     build:
       context: .
       dockerfile: LttfRating/Dockerfile
+    volumes:
+      - C:/docker/lttf_rating:/app/config
+    environment:
+      - ASPNETCORE_ENVIRONMENT=PROD

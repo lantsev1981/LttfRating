@@ -11,10 +11,10 @@ class Program
         Console.WriteLine($"Environment.UserName={Environment.UserName}");
 
         var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{envName}.json", optional: true, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{Environment.UserName}.json", optional: true, reloadOnChange: true)
+            .SetBasePath(Directory.GetCurrentDirectory())      
+            .AddJsonFile(Path.Combine("config", "appsettings.json"), optional: false, reloadOnChange: true)
+            .AddJsonFile(Path.Combine("config", $"appsettings.{envName}.json"), optional: true, reloadOnChange: true)
+            .AddJsonFile(Path.Combine("config", $"appsettings.{Environment.UserName}.json"), optional: true, reloadOnChange: true)
             .AddEnvironmentVariables()
             .Build();
         
