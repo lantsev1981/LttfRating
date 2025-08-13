@@ -69,8 +69,24 @@ public class SetUpdateMessageHandler(
             new SetValue(match.Groups[2].Value, points2)
         ];
 
-        return result
+        result = result
             .OrderByDescending(p => p.Points)
             .ToArray();
+        
+        return ValueValidation(result) ? result : null;
+    }
+
+    private static bool ValueValidation(SetValue[] setValue)
+    {
+        if (setValue[0].Login == setValue[1].Login)
+            return false;
+        
+        if (setValue[0].Points < 11)
+            return false;
+        
+        if (setValue[0].Points - setValue[1].Points < 2)
+            return false;
+
+        return true;
     }
 }
