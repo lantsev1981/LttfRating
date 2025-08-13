@@ -28,10 +28,16 @@ public class SetUpdateMessageHandler(
             await botClient.SendMessage(
                 chatId: request.Message.Chat.Id,
                 text: $"""
-                       @{sender}, результаты матча может отправлять только участник партии!
-                       Или обратитесь к администратору: {string.Join(',', _config.Administrators.Select(p => $"@{p}"))}
+                       ⚠️ <b>Ошибка отправки результата</b>
+
+                       @{sender}, результаты матча может отправить только участник партии.
+
+                       Если это ошибка — обратитесь к администратору:
+                       {string.Join(", ", _config.Administrators.Select(admin => $"<a href=\"tg://user?id={admin}\">@{admin}</a>"))}
                        """,
+                parseMode: ParseMode.Html,
                 cancellationToken: token);
+            
             return;
         }
 
