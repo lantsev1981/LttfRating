@@ -1,6 +1,7 @@
 ﻿services:
   LttfRating:
     image: lttf_rating
+    restart: always
     build:
       context: .
       dockerfile: LttfRating/Dockerfile
