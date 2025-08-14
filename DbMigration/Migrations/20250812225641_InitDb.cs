@@ -86,6 +86,8 @@ namespace DbMigration.Migrations
                 table: "GamerMatch",
                 column: "MatchId");
 
+            migrationBuilder.Sql(PgsqlHelper.CreateUser(Program.AppUser.Username, Program.AppUser.Password));
+            
             migrationBuilder.Sql(PgsqlHelper.GrantPrivileges(
                 Program.AppUser.Username,
                 PgsqlGrant.SELECT | PgsqlGrant.INSERT | PgsqlGrant.UPDATE,
