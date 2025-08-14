@@ -25,5 +25,9 @@ public class GamersConfiguration: IEntityTypeConfiguration<Gamer>
 
         builder
             .Ignore(p => p.OldRating);
+
+        builder
+            .HasIndex(p => p.UserId)
+            .IsUnique();
     }
 }

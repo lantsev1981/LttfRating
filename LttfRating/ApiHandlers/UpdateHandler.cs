@@ -9,24 +9,26 @@ public class UpdateHandler(
     {
         try
         {
+            if (update.Message?.From?.Username is null)
+            {
+                logger.LogTrace("Сообщение от неизвестного пользователя");
+                return;
+            }
+            
+            await mediator.Send(new AddGamerCommand(update.Message.From.Username, update.Message.From.Id), token);
+            
             switch (update.Type)
             {
                 case UpdateType.Message:
                 {
-                    if (update.Message?.Text is null)
+                    if (update.Message.Text is null)
                     {
                         logger.LogTrace("Сообщение не содержит текст");
                         break;
                     }
-
-                    if (update.Message.From?.Username is null)
-                    {
-                        logger.LogTrace("Сообщение от неизвестного пользователя");
-                        break;
-                    }
                     
                     logger.LogTrace("Пришло сообщение: {Text} от @{Username}",
-                        update.Message.Text, update.Message.From?.Username);
+                        update.Message.Text, update.Message.From.Username);
 
                     var commandAndArg = update.Message.Text.Split(' ');
                     switch (commandAndArg[0])
