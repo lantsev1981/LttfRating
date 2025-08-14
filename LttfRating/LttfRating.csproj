@@ -24,10 +24,6 @@
       <Content Include="config\appsettings.Development.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
-      <None Remove="config\appsettings.lants.json" />
-      <Content Include="config\appsettings.lants.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
     </ItemGroup>
 
     <ItemGroup>
