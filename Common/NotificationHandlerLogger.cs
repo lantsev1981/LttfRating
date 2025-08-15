@@ -23,11 +23,8 @@ public class NotificationHandlerLogger<TNotification>(
             logger.LogTrace("{Handler}.{Name}: обработано за {Elapsed} мс",
                 handlerType, typeName, stopwatch.ElapsedMilliseconds);
         }
-        catch (Exception ex)
+        catch
         {
-            logger.LogError(ex, "{Handler}.{Name}: ошибка {@Message}",
-                handlerType, typeName, ex.GetAllMessages());
-                
             stopwatch.Stop();
                 
             throw;

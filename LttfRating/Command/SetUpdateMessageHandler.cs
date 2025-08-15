@@ -13,9 +13,9 @@ public class SetUpdateMessageHandler(
 
     public async Task Handle(SetUpdateMessageCommand request, CancellationToken token)
     {
-        var sender = request.Message.From?.Username ?? "";
+        var sender = request.Message.From!.Username ?? "";
         
-        var setValues = ParseMatch(request.Message.Text ?? "", sender);
+        var setValues = ParseMatch(request.Message.Text!, sender);
         if (setValues == null || !ValueValidation(setValues))
         {
             logger.LogTrace("Сообщение не соответствует паттерну {Pattern}", nameof(ParseMatch));
@@ -27,7 +27,8 @@ public class SetUpdateMessageHandler(
         if (!isAdmin && !isGamer)
         {
             await botClient.SendMessage(
-                chatId: request.Message.Chat.Id,
+                chatId: request.Message.From.Id,
+                parseMode: ParseMode.Html,
                 text: $"""
                        ⚠️ <b>Ошибка отправки результата</b>
 
@@ -36,7 +37,6 @@ public class SetUpdateMessageHandler(
                        Если это ошибка — обратитесь к администратору:
                        {string.Join(", ", _config.Administrators.Select(admin => $"<a href=\"tg://user?id={admin}\">@{admin}</a>"))}
                        """,
-                parseMode: ParseMode.Html,
                 cancellationToken: token);
             
             return;
@@ -47,7 +47,7 @@ public class SetUpdateMessageHandler(
 
         var matchId = await mediator.Send(new GetOrAddMatchCommand(
             setValues[0].Login, setValues[1].Login), token);
-        await mediator.Send(new AddSetCommand(matchId, setValues), token);
+        await mediator.Send(new AddSetCommand(matchId, setValues, request.Message.Chat.Id, request.Message.MessageId), token);
         await mediator.Send(new SendResultMessageCommand(request.Message.Chat.Id, matchId), token);
     }
 

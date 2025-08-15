@@ -2,7 +2,7 @@ namespace LttfRating;
 
 public class GamerStore(AppDbContext context) : IDomainStore<Gamer>
 {
-    public async Task<Gamer?> GetById<TKey>(TKey id, CancellationToken token)
+    public async Task<Gamer?> GetByKey<TKey>(TKey id, CancellationToken token)
     {
         return id is string login
             ? await context.Gamers
@@ -30,9 +30,17 @@ public class GamerStore(AppDbContext context) : IDomainStore<Gamer>
 
     public async Task UpdateItem(Gamer item, CancellationToken token)
     {
+        if (!context.ChangeTracker.HasChanges())
+            return;
+        
         var result = await context.SaveChangesAsync(token);
 
         if (result < 1)
             throw new OperationException($"{nameof(Gamer)}.{item.Login}: изменения не применились");
+    }
+
+    public Task DeleteItem(Gamer item, CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 }

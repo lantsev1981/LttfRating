@@ -25,11 +25,8 @@ public class RequestHandlerLogger<TRequest, TResponse>(
             
             return result;
         }
-        catch (Exception ex)
+        catch
         {
-            logger.LogError(ex, "{Handler}.{Name}: ошибка {@Message}",
-                handlerType, typeName, ex.GetAllMessages());
-                
             stopwatch.Stop();
                 
             throw;
@@ -60,11 +57,8 @@ public class RequestHandlerLogger<TRequest>(
             logger.LogTrace("{Handler}.{Name}: обработано за {Elapsed} мс",
                 handlerType, typeName, stopwatch.ElapsedMilliseconds);
         }
-        catch (Exception ex)
+        catch 
         {
-            logger.LogError(ex, "{Handler}.{Name}: ошибка {@Message}",
-                handlerType, typeName, ex.GetAllMessages());
-                
             stopwatch.Stop();
                 
             throw;

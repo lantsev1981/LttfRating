@@ -14,7 +14,7 @@ public class BotService(
 
         var receiverOptions = new ReceiverOptions
         {
-            AllowedUpdates = [UpdateType.Message],
+            AllowedUpdates = [UpdateType.Message, UpdateType.MessageReaction],
             DropPendingUpdates = false,
         };
 

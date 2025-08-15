@@ -9,7 +9,7 @@ public class SendResultMessageHandler(
 {
     public async Task Handle(SendResultMessageCommand request, CancellationToken token)
     {
-        var match = await store.GetById(request.MatchId, token)
+        var match = await store.GetByKey(request.MatchId, token)
                     ?? throw new NullReferenceException($"Матч {request.MatchId} не найден");
 
         var winner = match.GetLastWinner();
@@ -27,6 +27,7 @@ public class SendResultMessageHandler(
         
         await botClient.SendMessage(
             chatId: request.ChatId,
+            parseMode: ParseMode.Html,
             text: $"""
                     <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
                     
@@ -35,7 +36,6 @@ public class SendResultMessageHandler(
                     {setGroup[winner.Login].Length} {ToEmojiDigits(lastSet.WonPoint, "00")} — {ToEmojiDigits(lastSet.LostPoint, "00")} {losSets?.Length ?? 0}
                     └────────────────┘</code>
                     """,
-            parseMode: ParseMode.Html,
             cancellationToken: token);
 
         if (!match.IsPending)
@@ -48,6 +48,7 @@ public class SendResultMessageHandler(
             
             await botClient.SendMessage(
                 chatId: request.ChatId,
+                parseMode: ParseMode.Html,
                 text: $"""
                        <i>Матч завершён</i>
                        
@@ -59,7 +60,6 @@ public class SendResultMessageHandler(
                        📊 Изменение рейтинга:
                        {winner.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0})</code> — {loser.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0})</code>
                        """,
-                parseMode: ParseMode.Html,
                 cancellationToken: token);
         }
     }

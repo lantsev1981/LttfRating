@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record AddSetCommand(Guid MatchId, SetValue[] SetValues) : IRequest;
+public record AddSetCommand(Guid MatchId, SetValue[] SetValues, long ChatId, int MessageId) : IRequest;
 
 public class AddSetHandler(
     IDomainStore<Match> store,
@@ -15,14 +15,16 @@ public class AddSetHandler(
             request.SetValues[1].Points,
             request.SetValues[1].Login);
 
-        var match = await store.GetById(request.MatchId, token)
+        var match = await store.GetByKey(request.MatchId, token)
                     ?? throw new NullReferenceException($"Матч {request.MatchId} не найден");
 
         var set = new Set(
             (byte)(match.Sets.Count + 1),
             request.SetValues[0].Points,
             request.SetValues[1].Points,
-            request.SetValues[0].Login);
+            request.SetValues[0].Login,
+            request.ChatId,
+            request.MessageId);
 
         match.Sets.Add(set);
 

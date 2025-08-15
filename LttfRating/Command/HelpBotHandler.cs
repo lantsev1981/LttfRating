@@ -10,7 +10,7 @@ public class HelpBotHandler(
     {
         await using var stream = File.OpenRead("LttfRatingBotQr.jpg");
         await botClient.SendPhoto(
-            chatId: request.Message.Chat.Id,
+            chatId: request.Message.From!.Id,
             photo: new InputFileStream(stream),
             parseMode: ParseMode.Html,
             caption:"""

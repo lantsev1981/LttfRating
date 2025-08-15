@@ -42,6 +42,7 @@ class Program
             .AddSingleton<IBotService, BotService>()
             .AddTransient<IDomainStore<Gamer>, GamerStore>()
             .AddTransient<IDomainStore<Match>, MatchStore>()
+            .AddTransient<IDomainStore<Set>, SetStore>()
             .AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(
                     configuration.GetConnectionString("AppUserConnectionString"),

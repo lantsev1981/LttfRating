@@ -9,7 +9,7 @@ public class AddGamerHandler(
 {
     public async Task Handle(AddGamerCommand request, CancellationToken token)
     {
-        var gamer = await store.GetById(request.Login, token);
+        var gamer = await store.GetByKey(request.Login, token);
         if (gamer is null)
         {
             gamer = new Gamer(request.Login) {UserId = request.UserId};
