@@ -14,31 +14,28 @@ public class SetUpdateMessageHandler(
     public async Task Handle(SetUpdateMessageCommand request, CancellationToken token)
     {
         var sender = request.Message.From!.Username ?? "";
-        
+
         var setValues = ParseMatch(request.Message.Text!, sender);
         if (setValues == null || !ValueValidation(setValues))
         {
             logger.LogTrace("Сообщение не соответствует паттерну {Pattern}", nameof(ParseMatch));
             return;
         }
-        
+
         var isAdmin = _config.Administrators.Contains(sender);
         var isGamer = setValues.Select(p => p.Login).Contains(sender);
         if (!isAdmin && !isGamer)
         {
-            await botClient.SendMessage(
-                chatId: request.Message.From.Id,
-                parseMode: ParseMode.Html,
-                text: $"""
-                       ⚠️ <b>Ошибка отправки результата</b>
+            await mediator.Send(new SendMessageCommand(request.Message.From.Id,
+                $"""
+                 ⚠️ <b>Ошибка отправки результата</b>
 
-                       @{sender}, результаты матча может отправить только участник партии.
+                 @{sender}, результаты матча может отправить только участник партии.
 
-                       Если это ошибка — обратитесь к администратору:
-                       {string.Join(", ", _config.Administrators.Select(admin => $"<a href=\"tg://user?id={admin}\">@{admin}</a>"))}
-                       """,
-                cancellationToken: token);
-            
+                 Если это ошибка — обратитесь к администратору:
+                 {string.Join(", ", _config.Administrators.Select(admin => $"<a href=\"tg://user?id={admin}\">@{admin}</a>"))}
+                 """), token);
+
             return;
         }
 
@@ -54,7 +51,7 @@ public class SetUpdateMessageHandler(
     private static SetValue[]? ParseMatch(string text, string senderLogin)
     {
         SetValue[]? result = null;
-            
+
         // Формат 1: @игрок1 @игрок2 11 3
         var fullMatch = Regex.Match(text, @"^@(\w+)\s+@(\w+)\s+(\d+)\s+(\d+)$");
         if (fullMatch.Success)
@@ -89,7 +86,7 @@ public class SetUpdateMessageHandler(
         result = result?
             .OrderByDescending(p => p.Points)
             .ToArray();
-        
+
         return result;
     }
 
@@ -99,13 +96,13 @@ public class SetUpdateMessageHandler(
 
         if (setValue.Any(p => string.IsNullOrWhiteSpace(p.Login)))
             return false;
-        
+
         if (setValue[0].Login == setValue[1].Login)
             return false;
-        
+
         if (setValue[0].Points < 11)
             return false;
-        
+
         if (setValue[0].Points - setValue[1].Points < 2)
             return false;
 

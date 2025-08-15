@@ -1,26 +1,33 @@
 ﻿namespace LttfRating;
 
-public record AddGamerCommand(string Login, long? UserId = null): IRequest;
+public record AddGamerCommand(string Login, long? UserId = null) : IRequest<bool>;
 
 public class AddGamerHandler(
     IDomainStore<Gamer> store,
     ILogger<AddGamerHandler> logger)
-    : IRequestHandler<AddGamerCommand>
+    : IRequestHandler<AddGamerCommand, bool>
 {
-    public async Task Handle(AddGamerCommand request, CancellationToken token)
+    public async Task<bool> Handle(AddGamerCommand request, CancellationToken token)
     {
         var gamer = await store.GetByKey(request.Login, token);
         if (gamer is null)
         {
-            gamer = new Gamer(request.Login) {UserId = request.UserId};
+            gamer = new Gamer(request.Login) { UserId = request.UserId };
 
             logger.LogTrace("Добавляем нового игрока: @{Login}", request.Login);
             await store.AddAsync(gamer, token);
+
+            return request.UserId is not null;
         }
-        else if (request.UserId is not null && gamer.UserId is null)
+
+        if (request.UserId is not null && gamer.UserId is null)
         {
             gamer.UserId = request.UserId;
             await store.UpdateItem(gamer, token);
+
+            return true;
         }
+
+        return false;
     }
 }

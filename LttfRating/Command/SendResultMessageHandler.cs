@@ -4,7 +4,7 @@ public record SendResultMessageCommand(long ChatId, Guid MatchId) : IRequest;
 
 public class SendResultMessageHandler(
     IDomainStore<Match> store,
-    ITelegramBotClient botClient)
+    IMediator mediator)
     : IRequestHandler<SendResultMessageCommand>
 {
     public async Task Handle(SendResultMessageCommand request, CancellationToken token)
@@ -24,19 +24,16 @@ public class SendResultMessageHandler(
             .ToDictionary(p => p.Key, p => p.ToArray());
 
         setGroup.TryGetValue(loser.Login, out var losSets);
-        
-        await botClient.SendMessage(
-            chatId: request.ChatId,
-            parseMode: ParseMode.Html,
-            text: $"""
-                    <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
-                    
-                    <b>@{winner.Login} 🆚 @{loser.Login}</b>
-                    <code>┌────────────────┐
-                    {setGroup[winner.Login].Length} {ToEmojiDigits(lastSet.WonPoint, "00")} — {ToEmojiDigits(lastSet.LostPoint, "00")} {losSets?.Length ?? 0}
-                    └────────────────┘</code>
-                    """,
-            cancellationToken: token);
+
+        await mediator.Send(new SendMessageCommand(request.ChatId,
+            $"""
+             <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
+
+             <b>@{winner.Login} 🆚 @{loser.Login}</b>
+             <code>┌────────────────┐
+             {setGroup[winner.Login].Length} {ToEmojiDigits(lastSet.WonPoint, "00")} — {ToEmojiDigits(lastSet.LostPoint, "00")} {losSets?.Length ?? 0}
+             └────────────────┘</code>
+             """), token);
 
         if (!match.IsPending)
         {
@@ -45,22 +42,18 @@ public class SendResultMessageHandler(
             var loserPoints = points - winnerPoints;
             var winnerSubRating = winner.Rating - winner.OldRating;
             var loserSubRating = loser.Rating - loser.OldRating;
-            
-            await botClient.SendMessage(
-                chatId: request.ChatId,
-                parseMode: ParseMode.Html,
-                text: $"""
-                       <i>Матч завершён</i>
-                       
-                       <b>🏆 @{winner.Login} 🆚 @{loser.Login}</b>
-                       <code> ┌───────────────┐
-                       {winnerPoints:00}   {ToEmojiDigits(setGroup[winner.Login].Length, "0")} — {ToEmojiDigits(losSets?.Length ?? 0, "0")}   {loserPoints:00}
-                        └───────────────┘</code>
+            await mediator.Send(new SendMessageCommand(request.ChatId,
+                $"""
+                 <i>Матч завершён</i>
 
-                       📊 Изменение рейтинга:
-                       {winner.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0})</code> — {loser.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0})</code>
-                       """,
-                cancellationToken: token);
+                 <b>🏆 @{winner.Login} 🆚 @{loser.Login}</b>
+                 <code> ┌───────────────┐
+                 {winnerPoints:00}   {ToEmojiDigits(setGroup[winner.Login].Length, "0")} — {ToEmojiDigits(losSets?.Length ?? 0, "0")}   {loserPoints:00}
+                  └───────────────┘</code>
+
+                 📊 Изменение рейтинга:
+                 {winner.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0})</code> — {loser.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0})</code>
+                 """), token);
         }
     }
 

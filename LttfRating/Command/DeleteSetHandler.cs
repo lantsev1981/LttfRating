@@ -6,7 +6,7 @@ public class DeleteSetHandler(
     IOptions<ApiConfig> config,
     IDomainStore<Set> store,
     ILogger<DeleteSetHandler> logger,
-    ITelegramBotClient botClient)
+    IMediator mediator)
     : IRequestHandler<DeleteSetCommand>
 {
     private readonly ApiConfig _config = config.Value;
@@ -18,13 +18,13 @@ public class DeleteSetHandler(
             return;
 
         var set = await store.GetByKey(new ChatMessage(
-            request.MessageReaction.Chat.Id,
-            request.MessageReaction.MessageId),
+                request.MessageReaction.Chat.Id,
+                request.MessageReaction.MessageId),
             token);
-        
+
         if (set is null)
             return;
-        
+
         var sender = request.MessageReaction.User!.Username!;
         var isAdmin = _config.Administrators.Contains(sender);
         var isGamer = set.Match.Gamers.Any(p => p.Login == sender);
@@ -33,41 +33,35 @@ public class DeleteSetHandler(
             // игрок может отменить игру только в течении часа
             if (!isAdmin && DateTimeOffset.UtcNow - set.Date > TimeSpan.FromHours(1))
             {
-                await botClient.SendMessage(
-                    chatId: request.MessageReaction.User.Id,
-                    parseMode: ParseMode.Html,
-                    text: $"""
-                           ⚠️ <b>Вы неможете отменить партию</b>
+                await mediator.Send(new SendMessageCommand(request.MessageReaction.User.Id,
+                    $"""
+                     ⚠️ <b>Вы не можете отменить партию</b>
 
-                           @{sender}, отменить партию можно только в течении часа.
+                     @{sender}, отменить партию можно только в течении часа.
 
-                           Если это ошибка — обратитесь к администратору:
-                           {string.Join(", ", _config.Administrators.Select(admin => $"<a href=\"tg://user?id={admin}\">@{admin}</a>"))}
-                           """,
-                    cancellationToken: token);
-                
+                     Если это ошибка — обратитесь к администратору:
+                     {string.Join(", ", _config.Administrators.Select(admin => $"<a href=\"tg://user?id={admin}\">@{admin}</a>"))}
+                     """), token);
+
                 return;
             }
-            
+
             var winner = set.Match.GetLastWinner();
             var loser = set.Match.GetLastLoser();
-            
+
             set.Match.IsPending = true;
             await store.UpdateItem(set, token);
             await store.DeleteItem(set, token);
-            
+
             logger.LogTrace("{User} удалил партию {Set}", sender, $$"""{{{set.MatchId}}, {{set.Num}}}""");
-            
-            await botClient.SendMessage(
-                chatId: request.MessageReaction.User.Id,
-                parseMode: ParseMode.Html,
-                text: $"""
-                          ⚠️<b>Партия #{set.Num} • отменена</b>
-                          
-                          <i>@{winner.Login} {set.WonPoint} 🆚 {set.LostPoint} @{loser.Login}</i>
-                          """,
-                cancellationToken: token);
-            
+
+            await mediator.Send(new SendMessageCommand(request.MessageReaction.User.Id,
+                $"""
+                 ⚠️<b>Партия #{set.Num} • отменена</b>
+
+                 <i>@{winner.Login} {set.WonPoint} 🆚 {set.LostPoint} @{loser.Login}</i>
+                 """), token);
+
             // TODO седелать механизм пересчёта рейтинга игроков
             // скорее всего надо делать в фоне
             // отложить обработку новых сообщений на это время
