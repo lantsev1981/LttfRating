@@ -5,18 +5,17 @@ public record SetUpdateMessageCommand(Message Message) : IRequest;
 public class SetUpdateMessageHandler(
     ILogger<SetUpdateMessageHandler> logger,
     IMediator mediator,
-    IOptions<ApiConfig> config,
-    ITelegramBotClient botClient)
+    IOptions<ApiConfig> config)
     : IRequestHandler<SetUpdateMessageCommand>
 {
     private readonly ApiConfig _config = config.Value;
 
     public async Task Handle(SetUpdateMessageCommand request, CancellationToken token)
     {
-        var sender = request.Message.From!.Username ?? "";
+        var sender = request.Message.From!.Username!;
 
         var setValues = ParseMatch(request.Message.Text!, sender);
-        if (setValues == null || !ValueValidation(setValues))
+        if (setValues == null || !await ValueValidation(setValues, request.Message, token))
         {
             logger.LogTrace("Сообщение не соответствует паттерну {Pattern}", nameof(ParseMatch));
             return;
@@ -26,15 +25,8 @@ public class SetUpdateMessageHandler(
         var isGamer = setValues.Select(p => p.Login).Contains(sender);
         if (!isAdmin && !isGamer)
         {
-            await mediator.Send(new SendMessageCommand(request.Message.From.Id,
-                $"""
-                 ⚠️ <b>Ошибка отправки результата</b>
-
-                 @{sender}, результаты матча может отправить только участник партии.
-
-                 Если это ошибка — обратитесь к администратору:
-                 {string.Join(", ", _config.Administrators.Select(admin => $"<a href=\"tg://user?id={admin}\">@{admin}</a>"))}
-                 """), token);
+            await SendValidationError(request.Message.Chat.Id, sender,
+                "результаты матча может отправить только участник партии", token);
 
             return;
         }
@@ -44,7 +36,8 @@ public class SetUpdateMessageHandler(
 
         var matchId = await mediator.Send(new GetOrAddMatchCommand(
             setValues[0].Login, setValues[1].Login), token);
-        await mediator.Send(new AddSetCommand(matchId, setValues, request.Message.Chat.Id, request.Message.MessageId), token);
+        await mediator.Send(new AddSetCommand(matchId, setValues, request.Message.Chat.Id, request.Message.MessageId),
+            token);
         await mediator.Send(new SendResultMessageCommand(request.Message.Chat.Id, matchId), token);
     }
 
@@ -90,22 +83,58 @@ public class SetUpdateMessageHandler(
         return result;
     }
 
-    private static bool ValueValidation(SetValue[] setValue)
+    private async Task<bool> ValueValidation(SetValue[] setValue, Message message, CancellationToken token)
     {
-        // TODO как проверить существует ли пользователь в телеге?
-
-        if (setValue.Any(p => string.IsNullOrWhiteSpace(p.Login)))
+        var winner = setValue[0];
+        var loser = setValue[1];
+        var username = message.From!.Username!;
+    
+        if (winner.Login == loser.Login)
+        {
+            await SendValidationError(message.Chat.Id, username,
+                "указан одинаковый логин для обоих игроков", token);
             return false;
+        }
 
-        if (setValue[0].Login == setValue[1].Login)
+        if (winner.Points < 11)
+        {
+            await SendValidationError(message.Chat.Id, username,
+                "результат победителя должен быть не менее 11 очков", token);
             return false;
+        }
 
-        if (setValue[0].Points < 11)
+        var pointDiff = winner.Points - loser.Points;
+    
+        if (winner.Points == 11 && pointDiff < 2)
+        {
+            await SendValidationError(message.Chat.Id, username,
+                "разница в очках должна быть не менее 2", token);
             return false;
+        }
 
-        if (setValue[0].Points - setValue[1].Points < 2)
+        if (winner.Points > 11 && pointDiff != 2)
+        {
+            await SendValidationError(message.Chat.Id, username,
+                "при игре на больше/меньше разница должна быть в 2 очка", token);
             return false;
+        }
 
         return true;
+    }
+
+    private async Task SendValidationError(long chatId, string username, string errorMessage, CancellationToken token)
+    {
+        var adminLinks = string.Join(", ", _config.Administrators.Select(admin => 
+            $"<a href=\"tg://user?id={admin}\">@{admin}</a>"));
+    
+        await mediator.Send(new SendMessageCommand(chatId,
+            $"""
+             ⚠️ <b>Ошибка ввода результата</b>
+
+             @{username}, {errorMessage}.
+
+             Если это ошибка — обратитесь к администратору:
+             {adminLinks}
+             """), token);
     }
 }
