@@ -5,7 +5,7 @@ public class UpdateHandler(
     IMediator mediator,
     IOptions<ApiConfig> config,
     ILogger<UpdateHandler> logger,
-    IDomainStore<Gamer> store)
+    IGamerStore store)
 {
     private readonly ApiConfig _config = config.Value;
 
@@ -34,25 +34,22 @@ public class UpdateHandler(
 
             if (await mediator.Send(new AddGamerCommand(user.Username, user.Id), token))
             {
-                var adminLogin = _config.Administrators.FirstOrDefault();
-                if (adminLogin is not null)
-                {
-                    var admin = await store.GetByKey(adminLogin, token);
-                    if (admin?.UserId is not null)
-                    {
-                        await mediator.Send(new SendMessageCommand(admin.UserId.Value,
-                            $"""
-                             🆕 <b>НОВЫЙ ПОЛЬЗОВАТЕЛЬ</b>
-                             ━━━━━━━━━━━━━━━━━━━
+                var admin = await store.GetAdminGamerId(token);
 
-                             👤 <b>Основная информация:</b>
-                             ├ ID: <code>{user.Id}</code>
-                             ├ Логин: @{user.Username ?? "-"}
-                             ├ Имя: {user.FirstName}
-                             ├ Фамилия: {user.LastName ?? "-"}
-                             └ Язык: {user.LanguageCode ?? "-"}
-                             """), token);
-                    }
+                if (admin?.UserId is not null)
+                {
+                    await mediator.Send(new SendMessageCommand(admin.UserId.Value,
+                        $"""
+                         🆕 <b>НОВЫЙ ПОЛЬЗОВАТЕЛЬ</b>
+                         ━━━━━━━━━━━━━━━━━━━
+
+                         👤 <b>Основная информация:</b>
+                         ├ ID: <code>{user.Id}</code>
+                         ├ Логин: @{user.Username ?? "-"}
+                         ├ Имя: {user.FirstName}
+                         ├ Фамилия: {user.LastName ?? "-"}
+                         └ Язык: {user.LanguageCode ?? "-"}
+                         """), token);
                 }
             }
 
@@ -79,7 +76,7 @@ public class UpdateHandler(
                     switch (commandAndArg[0])
                     {
                         case "/help":
-                            
+
                             await mediator.Send(new SendMessageCommand(update.Message.From!.Id,
                                 """
                                 🤖 <b>Добро пожаловать в бот учёта рейтинга Lttf игроков в настольный теннис!</b>
@@ -95,7 +92,7 @@ public class UpdateHandler(
                                 Если хочешь поучаствовать в разработке или просто позырить <a href="https://github.com/lantsev1981/LttfRating">код</a>
                                 Если хочешь поблагодарить <a href="https://www.tbank.ru/cf/1k4w2TmaoyE">кликай</a> или сканируй QR-code
                                 """, "LttfRatingBotQr.jpg"), token);
-                            
+
                             break;
                         default:
                             await mediator.Send(new SetUpdateMessageCommand(update.Message), token);

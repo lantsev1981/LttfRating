@@ -40,6 +40,7 @@ class Program
             .AddSingleton<UpdateHandler>()
             .AddSingleton<ErrorHandler>()
             .AddSingleton<IBotService, BotService>()
+            .AddTransient<IGamerStore, GamerStore>()
             .AddTransient<IDomainStore<Gamer>, GamerStore>()
             .AddTransient<IDomainStore<Match>, MatchStore>()
             .AddTransient<IDomainStore<Set>, SetStore>()

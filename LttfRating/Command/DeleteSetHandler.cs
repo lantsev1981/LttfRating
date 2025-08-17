@@ -4,7 +4,8 @@ public record DeleteSetCommand(MessageReactionUpdated MessageReaction) : IReques
 
 public class DeleteSetHandler(
     IOptions<ApiConfig> config,
-    IDomainStore<Set> store,
+    IDomainStore<Set> setStore,
+    IGamerStore gamerStore,
     ILogger<DeleteSetHandler> logger,
     IMediator mediator)
     : IRequestHandler<DeleteSetCommand>
@@ -17,7 +18,7 @@ public class DeleteSetHandler(
             is not ReactionTypeEmoji { Emoji: "👎" })
             return;
 
-        var set = await store.GetByKey(new ChatMessage(
+        var set = await setStore.GetByKey(new ChatMessage(
                 request.MessageReaction.Chat.Id,
                 request.MessageReaction.MessageId),
             token);
@@ -48,19 +49,28 @@ public class DeleteSetHandler(
 
             var winner = set.Match.GetLastWinner();
             var loser = set.Match.GetLastLoser();
+            var admin = await gamerStore.GetAdminGamerId(token);
 
             set.Match.IsPending = true;
-            await store.UpdateItem(set, token);
-            await store.DeleteItem(set, token);
+            await setStore.UpdateItem(set, token);
+            await setStore.DeleteItem(set, token);
 
             logger.LogTrace("{User} удалил партию {Set}", sender, $$"""{{{set.MatchId}}, {{set.Num}}}""");
 
-            await mediator.Send(new SendMessageCommand(request.MessageReaction.User.Id,
-                $"""
-                 ⚠️<b>Партия #{set.Num} • отменена</b>
+            HashSet<long?> recipients = [admin?.UserId, winner.UserId, loser.UserId];
 
-                 <i>@{winner.Login} {set.WonPoint} 🆚 {set.LostPoint} @{loser.Login}</i>
-                 """), token);
+            foreach (var recipient in recipients)
+            {
+                if (recipient is null)
+                    continue;
+
+                await mediator.Send(new SendMessageCommand(recipient.Value,
+                    $"""
+                     ⚠️<b>Партия #{set.Num} • отменена</b>
+
+                     <i>@{winner.Login} {set.WonPoint} 🆚 {set.LostPoint} @{loser.Login}</i>
+                     """), token);
+            }
 
             // TODO седелать механизм пересчёта рейтинга игроков
             // скорее всего надо делать в фоне

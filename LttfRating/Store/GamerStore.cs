@@ -1,7 +1,14 @@
 namespace LttfRating;
 
-public class GamerStore(AppDbContext context) : IDomainStore<Gamer>
+public interface IGamerStore : IDomainStore<Gamer>
 {
+    Task<Gamer?> GetAdminGamerId(CancellationToken token);
+}
+
+public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGamerStore
+{
+    private readonly ApiConfig _config = config.Value;
+
     public async Task<Gamer?> GetByKey<TKey>(TKey id, CancellationToken token)
     {
         return id is string login
@@ -19,7 +26,7 @@ public class GamerStore(AppDbContext context) : IDomainStore<Gamer>
     {
         await context.Gamers
             .AddAsync(item, token);
-        
+
         await context.SaveChangesAsync(token);
     }
 
@@ -32,7 +39,7 @@ public class GamerStore(AppDbContext context) : IDomainStore<Gamer>
     {
         if (!context.ChangeTracker.HasChanges())
             return;
-        
+
         var result = await context.SaveChangesAsync(token);
 
         if (result < 1)
@@ -42,5 +49,14 @@ public class GamerStore(AppDbContext context) : IDomainStore<Gamer>
     public Task DeleteItem(Gamer item, CancellationToken token)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<Gamer?> GetAdminGamerId(CancellationToken token)
+    {
+        var adminLogin = _config.Administrators.FirstOrDefault();
+        if (adminLogin is null)
+            return null;
+        
+        return await GetByKey(adminLogin, token);
     }
 }

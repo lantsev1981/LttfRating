@@ -4,7 +4,7 @@ public class ErrorHandler(
     ILogger<ErrorHandler> logger,
     IOptions<ApiConfig> config,
     IMediator mediator,
-    IDomainStore<Gamer> store)
+    IGamerStore store)
 {
     private readonly ApiConfig _config = config.Value;
 
@@ -18,12 +18,8 @@ public class ErrorHandler(
         };
 
         logger.LogError(error, "[Ошибка] {ErrorMessage}", errorMessage);
-
-        var adminLogin = _config.Administrators.FirstOrDefault();
-        if (adminLogin is null)
-            return;
         
-        var admin = await store.GetByKey(adminLogin, token);
+        var admin = await store.GetAdminGamerId(token);
         if (admin?.UserId is null)
             return;
 
