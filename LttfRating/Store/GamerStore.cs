@@ -32,9 +32,16 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
         await context.SaveChangesAsync(token);
     }
 
-    public Task<IEnumerable<Gamer>> GetItems(CancellationToken token)
+    public async Task<IEnumerable<Gamer>> GetItems(CancellationToken token)
     {
-        throw new NotImplementedException();
+        return await context.Gamers
+            .Include(p => p.Matches)
+            .ThenInclude(p => p.Gamers)
+            .Include(p => p.Matches)
+            .ThenInclude(p => p.Sets)
+            .OrderByDescending(p => p.Rating)
+            .AsSplitQuery()
+            .ToArrayAsync(token);
     }
 
     public async Task Update(Gamer? item, CancellationToken token)

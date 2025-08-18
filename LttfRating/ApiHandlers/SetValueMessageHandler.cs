@@ -1,16 +1,16 @@
 ﻿namespace LttfRating;
 
-public record SetUpdateMessageCommand(Message Message) : IRequest;
+public record SetValueMessageCommand(Message Message) : IRequest;
 
-public class SetUpdateMessageHandler(
-    ILogger<SetUpdateMessageHandler> logger,
+public class SetValueMessageHandler(
+    ILogger<SetValueMessageHandler> logger,
     IMediator mediator,
     IOptions<ApiConfig> config)
-    : IRequestHandler<SetUpdateMessageCommand>
+    : IRequestHandler<SetValueMessageCommand>
 {
     private readonly ApiConfig _config = config.Value;
 
-    public async Task Handle(SetUpdateMessageCommand request, CancellationToken token)
+    public async Task Handle(SetValueMessageCommand request, CancellationToken token)
     {
         var sender = request.Message.From!.Username!;
 

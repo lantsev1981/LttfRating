@@ -21,10 +21,10 @@ public class MatchStore(AppDbContext context) : IDomainStore<Match>
     public async Task<IEnumerable<Match>> GetItems(CancellationToken token)
     {
         var matches = await context.Matches
-            .AsSplitQuery()
             .Include(p => p.Gamers)
             .Include(p => p.Sets)
             .Where(p => !p.IsPending)
+            .AsSplitQuery()
             .ToArrayAsync(token);
         
         return matches.OrderByDate();

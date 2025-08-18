@@ -1,7 +1,7 @@
 ﻿namespace LttfRating;
 
-public class ErrorHandler(
-    ILogger<ErrorHandler> logger,
+public class ErrorMessageHandler(
+    ILogger<ErrorMessageHandler> logger,
     IMediator mediator,
     IGamerStore store)
 {

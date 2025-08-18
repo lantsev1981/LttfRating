@@ -21,9 +21,9 @@ public class SendResultMessageHandler(
              <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
 
              <b>@{winner.Login} 🆚 @{loser.Login}</b>
-             <code>┌────────────────┐
+             <code>┌───────────┐
              {match.WinnerSetCount} {ToEmojiDigits(lastSet.WonPoint, "00")} — {ToEmojiDigits(lastSet.LostPoint, "00")} {match.LoserSetCount}
-             └────────────────┘</code>
+             └───────────┘</code>
              """), token);
 
         if (!match.IsPending)
@@ -38,9 +38,9 @@ public class SendResultMessageHandler(
                  <i>Матч завершён</i>
 
                  <b>🏆 @{winner.Login} 🆚 @{loser.Login}</b>
-                 <code> ┌───────────────┐
+                 <code> ┌──────────┐
                  {winnerPoints:00}   {ToEmojiDigits(match.WinnerSetCount, "0")} — {ToEmojiDigits(match.LoserSetCount, "0")}   {loserPoints:00}
-                  └───────────────┘</code>
+                  └──────────┘</code>
 
                  📊 Изменение рейтинга:
                  {winner.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0})</code> — {loser.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0})</code>

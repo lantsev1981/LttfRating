@@ -7,6 +7,9 @@ public record Match(byte SetWonCount = 3)
     public required List<Gamer> Gamers { get; init; }
     public SortedSet<Set> Sets { get; init; } = [];
 
+    public Gamer Opponent(Gamer sender) =>
+        Gamers.Single(p => p != sender);
+
     public Gamer LastWinner =>
         Gamers.Single(p => p.Login == Sets.Last().WinnerLogin);
 

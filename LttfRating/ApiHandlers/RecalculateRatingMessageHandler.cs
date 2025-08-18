@@ -1,15 +1,15 @@
 ﻿namespace LttfRating;
 
-public record RecalculateRatingCommand(string Login) : IRequest;
+public record RecalculateRatingMessageCommand(string Login) : IRequest;
 
-public class RecalculateRatingHandler(
+public class RecalculateRatingMessageHandler(
     IDomainStore<Match> matchStore,
     IGamerStore gamerStore,
     IMediator mediator,
-    ILogger<RecalculateRatingHandler> logger)
-    : IRequestHandler<RecalculateRatingCommand>
+    ILogger<RecalculateRatingMessageHandler> logger)
+    : IRequestHandler<RecalculateRatingMessageCommand>
 {
-    public async Task Handle(RecalculateRatingCommand request, CancellationToken token)
+    public async Task Handle(RecalculateRatingMessageCommand request, CancellationToken token)
     {
         var admin = await gamerStore.GetAdminGamerId(token);
         if (admin?.Login != request.Login)

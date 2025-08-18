@@ -37,8 +37,8 @@ class Program
             // .Decorate(typeof(INotificationHandler<>), typeof(NotificationHandlerLogger<>))
             .AddSingleton<ITelegramBotClient>(_ => new TelegramBotClient(configuration["BotToken"]
                 ?? throw new InvalidOperationException("BotToken is missing")))
-            .AddSingleton<UpdateHandler>()
-            .AddSingleton<ErrorHandler>()
+            .AddSingleton<UpdateMessageHandler>()
+            .AddSingleton<ErrorMessageHandler>()
             .AddSingleton<IBotService, BotService>()
             .AddTransient<IGamerStore, GamerStore>()
             .AddTransient<IDomainStore<Gamer>, GamerStore>()

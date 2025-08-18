@@ -1,10 +1,10 @@
 ﻿namespace LttfRating;
 
-public class UpdateHandler(
-    ErrorHandler errorHandler,
+public class UpdateMessageHandler(
+    ErrorMessageHandler errorHandler,
     IMediator mediator,
     IOptions<ApiConfig> config,
-    ILogger<UpdateHandler> logger,
+    ILogger<UpdateMessageHandler> logger,
     IGamerStore store)
 {
     private readonly ApiConfig _config = config.Value;
@@ -74,18 +74,22 @@ public class UpdateHandler(
                     var commandAndArg = update.Message.Text.Split(' ');
                     switch (commandAndArg[0])
                     {
-                        case "/help":
+                        case "/start@LttfRatingBot":
+                        case "/start":
 
-                            await mediator.Send(new SendMessageCommand(update.Message.From!.Id,
+                            await mediator.Send(new SendMessageCommand(user.Id,
                                 """
                                 🤖 <b>Добро пожаловать в бот учёта рейтинга Lttf игроков в настольный теннис!</b>
 
                                 📌 <b>Возможности бота:</b>
+                                • Нажми /start что бы разрешить боту отправлять сообщения в личку
                                 • Отправляйте результаты матча в формате:
                                   <code>@соперник 9 11</code>
                                   ☝️ тегни соперника и проставь результат партии, где 9 это твои очки, а 11 соперника
-                                  ☝️ добавить результаты может только участник партии или администратор
                                 • Я автоматически учту результат и обновлю рейтинг
+                                • Поставь 👎 на сообщении типа "<code>@соперник 9 11</code>" если не согласен с результами или они введены ошибочно
+                                  ☝️ удалить результаты можно только в течении часа после их публикации
+                                • Отправь /rating что бы получить совой рейтинг, место и статистику в личку 
 
                                 Если есть вопросы — пишите <a href="https://t.me/lantsev1981">создатею</a>
                                 Если хочешь поучаствовать в разработке или просто позырить <a href="https://github.com/lantsev1981/LttfRating">код</a>
@@ -94,11 +98,16 @@ public class UpdateHandler(
 
                             break;
                         
+                        case "/recalculate@LttfRatingBot":
                         case "/recalculate":
-                            await mediator.Send(new RecalculateRatingCommand(update.Message.From!.Username!), token);
+                            await mediator.Send(new RecalculateRatingMessageCommand(update.Message.From!.Username!), token);
+                            break;
+                        case "/rating@LttfRatingBot":
+                        case "/rating":
+                            await mediator.Send(new SendRatingMessageCommand(update.Message), token);
                             break;
                         default:
-                            await mediator.Send(new SetUpdateMessageCommand(update.Message), token);
+                            await mediator.Send(new SetValueMessageCommand(update.Message), token);
                             break;
                     }
 

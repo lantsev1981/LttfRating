@@ -2,8 +2,8 @@
 
 public class BotService(
     ITelegramBotClient botClient,
-    UpdateHandler updateHandler,
-    ErrorHandler errorHandler,
+    UpdateMessageHandler updateHandler,
+    ErrorMessageHandler errorHandler,
     ILogger<BotService> logger)
     : IBotService
 {
@@ -11,6 +11,16 @@ public class BotService(
     {
         var me = await botClient.GetMe(token);
         logger.LogTrace("{FirstName} запущен!", me.FirstName);
+        
+        await botClient.SetMyCommands(
+            new BotCommand[]
+            {
+                new() { Command = "start", Description = "Запуск бота, список команд и помощь" },
+                new() { Command = "rating", Description = "Посмотреть свой рейтинг" }
+            },
+            new BotCommandScopeDefault(),
+            cancellationToken: token
+        );
 
         var receiverOptions = new ReceiverOptions
         {
