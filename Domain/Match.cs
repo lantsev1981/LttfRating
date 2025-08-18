@@ -7,11 +7,16 @@ public record Match(byte SetWonCount = 3)
     public required List<Gamer> Gamers { get; init; }
     public SortedSet<Set> Sets { get; init; } = [];
 
-    public Gamer GetLastWinner() =>
+    public Gamer LastWinner =>
         Gamers.Single(p => p.Login == Sets.Last().WinnerLogin);
 
-    public Gamer GetLastLoser() =>
+    public Gamer LastLoser =>
         Gamers.Single(p => p.Login != Sets.Last().WinnerLogin);
+
+    public int WinnerSetCount =>
+        Sets.Count(p => p.WinnerLogin == LastWinner.Login);
+    public int LoserSetCount =>
+        Sets.Count(p => p.WinnerLogin == LastLoser.Login);
 
     public DateTimeOffset Date =>
         Sets.LastOrDefault()?.Date ?? DateTimeOffset.MinValue;

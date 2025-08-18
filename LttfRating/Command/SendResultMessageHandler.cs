@@ -12,18 +12,9 @@ public class SendResultMessageHandler(
         var match = await store.GetByKey(request.MatchId, token)
                     ?? throw new NullReferenceException($"Матч {request.MatchId} не найден");
 
-        var winner = match.GetLastWinner();
-        var loser = match.GetLastLoser();
+        var winner = match.LastWinner;
+        var loser = match.LastLoser;
         var lastSet = match.Sets.Last();
-
-
-        // группируем партии по победителю
-        var setGroup = match.Sets
-            .GroupBy(p => p.WinnerLogin)
-            .OrderByDescending(p => p.Count())
-            .ToDictionary(p => p.Key, p => p.ToArray());
-
-        setGroup.TryGetValue(loser.Login, out var losSets);
 
         await mediator.Send(new SendMessageCommand(request.ChatId,
             $"""
@@ -31,7 +22,7 @@ public class SendResultMessageHandler(
 
              <b>@{winner.Login} 🆚 @{loser.Login}</b>
              <code>┌────────────────┐
-             {setGroup[winner.Login].Length} {ToEmojiDigits(lastSet.WonPoint, "00")} — {ToEmojiDigits(lastSet.LostPoint, "00")} {losSets?.Length ?? 0}
+             {match.WinnerSetCount} {ToEmojiDigits(lastSet.WonPoint, "00")} — {ToEmojiDigits(lastSet.LostPoint, "00")} {match.LoserSetCount}
              └────────────────┘</code>
              """), token);
 
@@ -48,7 +39,7 @@ public class SendResultMessageHandler(
 
                  <b>🏆 @{winner.Login} 🆚 @{loser.Login}</b>
                  <code> ┌───────────────┐
-                 {winnerPoints:00}   {ToEmojiDigits(setGroup[winner.Login].Length, "0")} — {ToEmojiDigits(losSets?.Length ?? 0, "0")}   {loserPoints:00}
+                 {winnerPoints:00}   {ToEmojiDigits(match.WinnerSetCount, "0")} — {ToEmojiDigits(match.LoserSetCount, "0")}   {loserPoints:00}
                   └───────────────┘</code>
 
                  📊 Изменение рейтинга:

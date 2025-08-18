@@ -19,12 +19,26 @@ public class RecalculateRatingHandler(
 
         foreach (var match in await matchStore.GetItems(token))
         {
-            logger.LogTrace("Пересчитываем матч: {Date}, {@Gamers}, партии {@Set}",
-                match.Date,
-                match.Gamers.Select(p => p.Login),
-                match.Sets.Select(p => p.Num));
-            
             match.CalculateRating();
+
+            var winner = match.LastWinner;
+            var loser = match.LastLoser;
+            
+            logger.LogTrace(
+                """
+                Пересчитываем матч: {Date}, партии {@Set}
+                 {Winner} vs {Loser}
+                 {@Rating}
+                """,
+                match.Date,
+                match.Sets.Select(p => p.Num),
+                $"{winner.Login} {match.Sets.Sum(p => p.GetPoints(winner.Login))}",
+                $"{match.Sets.Sum(p => p.GetPoints(loser.Login))} {loser.Login}",
+                (string[])
+                [
+                    $"{winner.Rating * 100:F0} ({(winner.Rating - winner.OldRating) * 100:F0})",
+                    $"{loser.Rating * 100:F0} ({(loser.Rating - loser.OldRating) * 100:F0})"
+                ]);
         }
 
         await matchStore.Update(null!, token);

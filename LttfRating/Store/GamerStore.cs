@@ -64,6 +64,6 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
 
     public async Task ClearRating(CancellationToken token)
     {
-        await context.Gamers.ForEachAsync(p => p.Rating = 0, token);
+        await context.Gamers.ForEachAsync(p => p.Rating = 1, token);
     }
 }

@@ -47,8 +47,8 @@ public class DeleteSetHandler(
                 return;
             }
 
-            var winner = set.Match.GetLastWinner();
-            var loser = set.Match.GetLastLoser();
+            var winner = set.Match.LastWinner;
+            var loser = set.Match.LastLoser;
             var admin = await gamerStore.GetAdminGamerId(token);
 
             set.Match.IsPending = true;

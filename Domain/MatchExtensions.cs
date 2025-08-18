@@ -6,29 +6,25 @@ public static class MatchExtensions
     {
         return items.OrderBy(p => p.Date);
     }
-    
+
     public static void CalculateRating(this Match match)
     {
-        var winner = match.GetLastWinner();
-        var loser = match.GetLastLoser();
+        var winner = match.LastWinner;
+        var loser = match.LastLoser;
 
         winner.OldRating = winner.Rating;
         loser.OldRating = loser.Rating;
-        var points = match.Sets.Sum(p => p.Points);
-        var winnerPoints = match.Sets.Sum(p => p.GetPoints(winner.Login));
-        var loserPoints = points - winnerPoints;
+        float points = match.Sets.Sum(p => p.Points);
+        float winnerPoints = match.Sets.Sum(p => p.GetPoints(winner.Login));
+        float loserPoints = points - winnerPoints;
 
-        // рейтинг победителя
-        var pointPrize = winnerPoints / (float)(2 * points); // вознагаждение за победные очки (на двоих)
-        var opponentPrize = winnerPoints * (loser.OldRating / points); // вознагаждение за силу противника
-        var losePointPenalty = loserPoints * (winner.OldRating / points); // штраф за пропущенные очки
-        winner.Rating += pointPrize + opponentPrize - losePointPenalty;
-
-        // рейтинг проигравшего
-        pointPrize = loserPoints / (float)(2 * points); // вознагаждение за победные очки (на двоих)
-        opponentPrize = loserPoints * (winner.OldRating / points); // вознагаждение за силу противника
-        losePointPenalty = winnerPoints * (loser.OldRating / points); // штраф за пропущенные очки
-        loser.Rating += pointPrize + opponentPrize - losePointPenalty;
+        // Формула изменения рейтинга (замкнутая система)
+        var opponentPrize = winnerPoints / points * (loser.OldRating * 0.5f); // вознагаждение за силу противника
+        var losePointPenalty = loserPoints / points * (winner.OldRating * 0.5f); // штраф за пропущенные очки
+        var change = opponentPrize - losePointPenalty;
+        
+        winner.Rating += change;
+        loser.Rating -= change;
 
         match.IsPending = false;
     }
