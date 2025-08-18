@@ -95,7 +95,7 @@ public class UpdateHandler(
                             break;
                         
                         case "/recalculate":
-                            await mediator.Send(new RecalculateRatingCommand(), token);
+                            await mediator.Send(new RecalculateRatingCommand(update.Message.From!.Username!), token);
                             break;
                         default:
                             await mediator.Send(new SetUpdateMessageCommand(update.Message), token);
