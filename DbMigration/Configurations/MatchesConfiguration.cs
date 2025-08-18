@@ -15,5 +15,8 @@ public class MatchesConfiguration: IEntityTypeConfiguration<Match>
             .HasMany(p => p.Sets)
             .WithOne(p => p.Match)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasIndex(p => p.IsPending);
     }
 }

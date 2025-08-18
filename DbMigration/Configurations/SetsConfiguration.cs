@@ -14,5 +14,12 @@ public class SetsConfiguration : IEntityTypeConfiguration<Set>
         builder
             .Property(p => p.MessageId)
             .HasDefaultValue(-1);
+        
+        builder
+            .HasIndex(p => p.Date)
+            .IsUnique();
+        
+        builder
+            .HasIndex(p => p.WinnerLogin);
     }
 }

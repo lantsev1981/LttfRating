@@ -2,12 +2,9 @@
 
 public class ErrorHandler(
     ILogger<ErrorHandler> logger,
-    IOptions<ApiConfig> config,
     IMediator mediator,
     IGamerStore store)
 {
-    private readonly ApiConfig _config = config.Value;
-
     public async Task HandleAsync(ITelegramBotClient botClient, Exception error, CancellationToken token)
     {
         var errorMessage = error switch
@@ -18,7 +15,7 @@ public class ErrorHandler(
         };
 
         logger.LogError(error, "[Ошибка] {ErrorMessage}", errorMessage);
-        
+
         var admin = await store.GetAdminGamerId(token);
         if (admin?.UserId is null)
             return;
@@ -31,7 +28,20 @@ public class ErrorHandler(
              ⚠️ <b>Тип ошибки:</b> <code>{error.GetType().Name}</code>
 
              📝 <b>Сообщение:</b>
-             <pre>{error.Message}</pre>
+             <pre>{EscapeHtml(errorMessage)}</pre>
              """), token);
+    }
+
+    private static string EscapeHtml(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        return text
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&apos;");
     }
 }

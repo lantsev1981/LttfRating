@@ -3,6 +3,8 @@ namespace LttfRating;
 public interface IGamerStore : IDomainStore<Gamer>
 {
     Task<Gamer?> GetAdminGamerId(CancellationToken token);
+
+    Task ClearRating(CancellationToken token);
 }
 
 public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGamerStore
@@ -35,7 +37,7 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
         throw new NotImplementedException();
     }
 
-    public async Task UpdateItem(Gamer item, CancellationToken token)
+    public async Task Update(Gamer? item, CancellationToken token)
     {
         if (!context.ChangeTracker.HasChanges())
             return;
@@ -43,7 +45,7 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
         var result = await context.SaveChangesAsync(token);
 
         if (result < 1)
-            throw new OperationException($"{nameof(Gamer)}.{item.Login}: изменения не применились");
+            throw new OperationException($"{nameof(Gamer)}.{item?.Login}: изменения не применились");
     }
 
     public Task DeleteItem(Gamer item, CancellationToken token)
@@ -56,7 +58,12 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
         var adminLogin = _config.Administrators.FirstOrDefault();
         if (adminLogin is null)
             return null;
-        
+
         return await GetByKey(adminLogin, token);
+    }
+
+    public async Task ClearRating(CancellationToken token)
+    {
+        await context.Gamers.ForEachAsync(p => p.Rating = 0, token);
     }
 }

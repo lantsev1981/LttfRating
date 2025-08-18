@@ -18,12 +18,19 @@ public class MatchStore(AppDbContext context) : IDomainStore<Match>
         throw new NotImplementedException();
     }
 
-    public Task<IEnumerable<Match>> GetItems(CancellationToken token)
+    public async Task<IEnumerable<Match>> GetItems(CancellationToken token)
     {
-        throw new NotImplementedException();
+        var matches = await context.Matches
+            .AsSplitQuery()
+            .Include(p => p.Gamers)
+            .Include(p => p.Sets)
+            .Where(p => !p.IsPending)
+            .ToArrayAsync(token);
+        
+        return matches.OrderByDate();
     }
 
-    public async Task UpdateItem(Match item, CancellationToken token)
+    public async Task Update(Match? item, CancellationToken token)
     {
         if (!context.ChangeTracker.HasChanges())
             return;
@@ -31,7 +38,7 @@ public class MatchStore(AppDbContext context) : IDomainStore<Match>
         var result = await context.SaveChangesAsync(token);
 
         if (result < 1)
-            throw new OperationException($"{nameof(Match)}.{item.Id}: изменения не применились");
+            throw new OperationException($"{nameof(Match)}.{item?.Id}: изменения не применились");
     }
 
     public Task DeleteItem(Match item, CancellationToken token)

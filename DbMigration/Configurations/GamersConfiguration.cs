@@ -29,5 +29,8 @@ public class GamersConfiguration: IEntityTypeConfiguration<Gamer>
         builder
             .HasIndex(p => p.UserId)
             .IsUnique();
+
+        builder
+            .HasIndex(p => p.Rating);
     }
 }

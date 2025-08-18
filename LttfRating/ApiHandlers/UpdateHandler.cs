@@ -43,7 +43,6 @@ public class UpdateHandler(
                          🆕 <b>НОВЫЙ ПОЛЬЗОВАТЕЛЬ</b>
                          ━━━━━━━━━━━━━━━━━━━
 
-                         👤 <b>Основная информация:</b>
                          ├ ID: <code>{user.Id}</code>
                          ├ Логин: @{user.Username ?? "-"}
                          ├ Имя: {user.FirstName}
@@ -93,6 +92,10 @@ public class UpdateHandler(
                                 Если хочешь поблагодарить <a href="https://www.tbank.ru/cf/1k4w2TmaoyE">кликай</a> или сканируй QR-code
                                 """, "LttfRatingBotQr.jpg"), token);
 
+                            break;
+                        
+                        case "/recalculate":
+                            await mediator.Send(new RecalculateRatingCommand(), token);
                             break;
                         default:
                             await mediator.Send(new SetUpdateMessageCommand(update.Message), token);

@@ -33,7 +33,7 @@ public class GetOrAddMatchHandler(
 
             winner.Matches.Add(match);
 
-            await store.UpdateItem(winner, token);
+            await store.Update(winner, token);
         }
 
         return match.Id;

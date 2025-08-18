@@ -52,7 +52,7 @@ public class DeleteSetHandler(
             var admin = await gamerStore.GetAdminGamerId(token);
 
             set.Match.IsPending = true;
-            await setStore.UpdateItem(set, token);
+            await setStore.Update(set, token);
             await setStore.DeleteItem(set, token);
 
             logger.LogTrace("{User} удалил партию {Set}", sender, $$"""{{{set.MatchId}}, {{set.Num}}}""");

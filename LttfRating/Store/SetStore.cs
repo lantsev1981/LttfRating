@@ -23,7 +23,7 @@ public class SetStore(AppDbContext context) : IDomainStore<Set>
         throw new NotImplementedException();
     }
 
-    public async Task UpdateItem(Set item, CancellationToken token)
+    public async Task Update(Set? item, CancellationToken token)
     {
         if (!context.ChangeTracker.HasChanges())
             return;
@@ -31,7 +31,7 @@ public class SetStore(AppDbContext context) : IDomainStore<Set>
         var result = await context.SaveChangesAsync(token);
 
         if (result < 1)
-            throw new OperationException($$"""{{nameof(Set)}}.{{{item.MatchId}}, {{item.Num}}}: изменения не применились""");
+            throw new OperationException($$"""{{nameof(Set)}}.{{{item?.MatchId}}, {{item?.Num}}}: изменения не применились""");
     }
 
     public async Task DeleteItem(Set item, CancellationToken token)
