@@ -15,7 +15,9 @@ public class RecalculateRatingMessageHandler(
         if (admin?.Login != request.Login)
             return;
 
-        await gamerStore.ClearRating(token);
+        var gamers =await gamerStore.GetItems(token);
+        foreach (var gamer in gamers)
+            gamer.Rating = 1;
 
         foreach (var match in await matchStore.GetItems(token))
         {
@@ -27,7 +29,7 @@ public class RecalculateRatingMessageHandler(
             logger.LogTrace(
                 """
                 Пересчитываем матч: {Date}, партии {@Set}
-                 {Winner} vs {Loser}
+                 {Winner} 🆚 {Loser}
                  {@Rating}
                 """,
                 match.Date,

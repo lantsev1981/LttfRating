@@ -4,8 +4,7 @@ public record SendRatingMessageCommand(Message Message, string? ViewLogin) : IRe
 
 public class SendRatingMessageHandler(
     IGamerStore gamerStore,
-    IMediator mediator,
-    ILogger<SendRatingMessageHandler> logger)
+    IMediator mediator)
     : IRequestHandler<SendRatingMessageCommand>
 {
     public async Task Handle(SendRatingMessageCommand request, CancellationToken token)
@@ -29,17 +28,6 @@ public class SendRatingMessageHandler(
         // Место в рейтинге
         int place = Array.IndexOf(allGamers, gamer) + 1;
 
-        // Эмодзи для рейтинга
-        string ratingEmoji = (gamer.Rating * 100) switch
-        {
-            >= 200 => "👑",
-            >= 180 => "🔥",
-            >= 150 => "⚡",
-            >= 120 => "💪",
-            >= 100 => "🎮",
-            _ => "🌱"
-        };
-
         // Соседи по рейтингу
         var inlineKeyboard = new List<InlineKeyboardButton>();
         string? above = null, below = null;
@@ -49,8 +37,8 @@ public class SendRatingMessageHandler(
             var higher = allGamers[place - 2]; // место выше — индекс (place-2)
             int diff = (int)((higher.Rating - gamer.Rating) * 100);
             var higherPlace = place - 1;
-            above = $"<i>{higherPlace.ToEmojiPosition()} @{higher.Login} • Рейтинг: {higher.Rating * 100:F0} ({(diff >= 0 ? "+" : "")}{diff})</i>";
-            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"📊 @{higher.Login}", $"/rating {higher.Login}"));
+            above = $"{higherPlace.ToEmojiPosition()} @{higher.Login} • 🌟 Рейтинг: {higher.Rating * 100:F0} <code>({(diff >= 0 ? "+" : "")}{diff}*)</code>";
+            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"🌟 @{higher.Login}", $"/rating {higher.Login}"));
         }
 
         if (place < allGamers.Length)
@@ -58,8 +46,8 @@ public class SendRatingMessageHandler(
             var lower = allGamers[place]; // место ниже — индекс (place)
             int diff = (int)((lower.Rating - gamer.Rating) * 100);
             var lowerPlace = place + 1;
-            below = $"<i>{lowerPlace.ToEmojiPosition()} @{lower.Login} • Рейтинг: {lower.Rating * 100:F0} ({diff})</i>";
-            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"📊 @{lower.Login}", $"/rating {lower.Login}"));
+            below = $"{lowerPlace.ToEmojiPosition()} @{lower.Login} • 🌟 Рейтинг: {lower.Rating * 100:F0} <code>({diff}*)</code>";
+            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"🌟 @{lower.Login}", $"/rating {lower.Login}"));
         }
 
         // Группировка матчей по противникам
@@ -114,21 +102,22 @@ public class SendRatingMessageHandler(
         var opponentsView = string.Join("\n", statsByOpponent.Select(s =>
         {
             var opponentPlace = Array.IndexOf(allGamers, s.Opponent) + 1;
-            return $"<b>{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}</b>: {s.Wins}-{s.Losses} <i>({(s.PointsWon - s.PointsLost >= 0 ? "+" : "")}{s.PointsWon - s.PointsLost})</i>";
+            return $"{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}: <b> {s.Wins} — {s.Losses} </b> <code>({(s.PointsWon - s.PointsLost >= 0 ? "+" : "")}{s.PointsWon - s.PointsLost}●)</code>";
         }));
 
         await mediator.Send(new SendMessageCommand(request.Message.Chat.Id,
             $"""
+             В общем зачёте:
              {above ?? ""}
-             <b>{place.ToEmojiPosition()} </b> @{gamer.Login} • Рейтинг: {gamer.Rating * 100:F0} {ratingEmoji}
+             <u>{place.ToEmojiPosition()} @{gamer.Login} • 🌟 Рейтинг: {gamer.Rating * 100:F0}</u>
              {below ?? ""}
 
              🏓 Всего матчей: {totalWins + totalLosses}
              📈 Побед: {totalWins} | Поражений: {totalLosses}
-             🎯 Очки: {(pointsDiff >= 0 ? "+" : "")}{pointsDiff}
+              ⬤  Очки : <code>{(pointsDiff >= 0 ? "+" : "")}{pointsDiff}●</code>
              🔁 Серии: побед {longestWinStreak}, проигрышей {longestLossStreak}
 
-             📋 Статистика по соперникам:
+             Статистика по соперникам:
              {opponentsView}
              """, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
     }

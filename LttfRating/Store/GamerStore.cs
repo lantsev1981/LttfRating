@@ -3,8 +3,6 @@ namespace LttfRating;
 public interface IGamerStore : IDomainStore<Gamer>
 {
     Task<Gamer?> GetAdminGamerId(CancellationToken token);
-
-    Task ClearRating(CancellationToken token);
 }
 
 public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGamerStore
@@ -67,10 +65,5 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
             return null;
 
         return await GetByKey(adminLogin, token);
-    }
-
-    public async Task ClearRating(CancellationToken token)
-    {
-        await context.Gamers.ForEachAsync(p => p.Rating = 1, token);
     }
 }

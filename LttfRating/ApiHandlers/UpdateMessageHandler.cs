@@ -1,16 +1,20 @@
 ﻿namespace LttfRating;
 
 public class UpdateMessageHandler(
-    ErrorMessageHandler errorHandler,
-    IMediator mediator,
+    IServiceProvider serviceProvider,
     IOptions<ApiConfig> config,
-    ILogger<UpdateMessageHandler> logger,
-    IGamerStore store)
+    ILogger<UpdateMessageHandler> logger)
 {
     private readonly ApiConfig _config = config.Value;
 
     public async Task HandleAsync(ITelegramBotClient botClient, Update update, CancellationToken token)
     {
+        // Зарегистрированы как Singleton, а нужен на каждый запрос новый AppContext
+        using var scope = serviceProvider.CreateScope();
+        var store = scope.ServiceProvider.GetRequiredService<IGamerStore>();
+        var errorHandler = scope.ServiceProvider.GetRequiredService<ErrorMessageHandler>();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+        
         try
         {
             var user = GetUser(update);
@@ -104,8 +108,19 @@ public class UpdateMessageHandler(
                             break;
                         case "/rating@LttfRatingBot":
                         case "/rating":
-                            var viewLogin = commandAndArg.Length == 2 ? commandAndArg[1].TrimStart('@') : null;
-                            await mediator.Send(new SendRatingMessageCommand(update.Message, viewLogin), token);
+                            
+                            var viewLogin = commandAndArg.Length > 1 ? commandAndArg[1].TrimStart('@') : null;
+
+                            if (commandAndArg.Length >= 3)
+                            {
+                                var opponentLogin = commandAndArg[2].TrimStart('@');
+                                await mediator.Send(new SendCompareMessageCommand(update.Message, viewLogin!, opponentLogin), token);
+                            }
+                            else
+                            {
+                                await mediator.Send(new SendRatingMessageCommand(update.Message, viewLogin), token);
+                            }
+                            
                             break;
                         default:
                             await mediator.Send(new SetValueMessageCommand(update.Message), token);

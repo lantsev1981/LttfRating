@@ -22,7 +22,7 @@ public class GetOrAddMatchHandler(
 
         if (match is null)
         {
-            logger.LogTrace("Добавляем новый матч: @{Winner} vs @{Loser}",
+            logger.LogTrace("Добавляем новый матч: @{Winner} \ud83c\udd9a @{Loser}",
                 winner.Login,
                 loser.Login);
 

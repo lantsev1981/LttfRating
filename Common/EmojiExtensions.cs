@@ -32,7 +32,7 @@ public static class EmojiExtensions
             "1" => "🥇",
             "2" => "🥈",
             "3" => "🥉",
-            _ => number.ToEmojiDigits("0")
+            _ => number.ToEmojiDigits("")
         };
     }
 }

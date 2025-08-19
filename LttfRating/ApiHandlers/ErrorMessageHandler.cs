@@ -1,12 +1,16 @@
 ﻿namespace LttfRating;
 
 public class ErrorMessageHandler(
-    ILogger<ErrorMessageHandler> logger,
-    IMediator mediator,
-    IGamerStore store)
+    IServiceProvider serviceProvider,
+    ILogger<ErrorMessageHandler> logger)
 {
     public async Task HandleAsync(ITelegramBotClient botClient, Exception error, CancellationToken token)
     {
+        // Зарегистрированы как Singleton, а нужен на каждый запрос новый AppContext
+        using var scope = serviceProvider.CreateScope();
+        var store = scope.ServiceProvider.GetRequiredService<IGamerStore>();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+        
         var errorMessage = error switch
         {
             ApiRequestException apiRequestException

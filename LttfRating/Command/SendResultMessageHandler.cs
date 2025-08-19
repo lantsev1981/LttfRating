@@ -15,35 +15,31 @@ public class SendResultMessageHandler(
         var winner = match.LastWinner;
         var loser = match.LastLoser;
         var lastSet = match.Sets.Last();
+        var subPoints = lastSet.WonPoint - lastSet.LostPoint;
 
         await mediator.Send(new SendMessageCommand(request.ChatId,
             $"""
-             <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
+              <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
 
-             <b>@{winner.Login} 🆚 @{loser.Login}</b>
-             <code>┌───────────┐
-             {match.WinnerSetCount} {lastSet.WonPoint.ToEmojiDigits("00")} — {lastSet.LostPoint.ToEmojiDigits("00")} {match.LoserSetCount}
-             └───────────┘</code>
-             """), token);
+              <b>@{winner.Login} {lastSet.WonPoint:00} 🆚 {lastSet.LostPoint:00} @{loser.Login}</b>
+              📋 По партиям:  {match.WinnerSetCount} — {match.LoserSetCount}
+              """), token);
 
         if (!match.IsPending)
         {
             var points = match.Sets.Sum(p => p.Points);
             var winnerPoints = match.Sets.Sum(p => p.GetPoints(winner.Login));
             var loserPoints = points - winnerPoints;
+            subPoints = winnerPoints - loserPoints;
             var winnerSubRating = winner.Rating - winner.OldRating;
             var loserSubRating = loser.Rating - loser.OldRating;
             await mediator.Send(new SendMessageCommand(request.ChatId,
                 $"""
                  <i>Матч завершён</i>
 
-                 <b>🏆 @{winner.Login} 🆚 @{loser.Login}</b>
-                 <code> ┌──────────┐
-                 {winnerPoints:00}   {match.WinnerSetCount.ToEmojiDigits("0")} — {match.LoserSetCount.ToEmojiDigits("0")}   {loserPoints:00}
-                  └──────────┘</code>
-
-                 📊 Изменение рейтинга:
-                 {winner.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0})</code> — {loser.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0})</code>
+                 <b>@{winner.Login} {match.WinnerSetCount} 🆚 {match.LoserSetCount} @{loser.Login}</b>
+                  ⬤  По очкам: {winnerPoints} — {loserPoints} <code>({(subPoints >= 0 ? "+" : "")}{subPoints}●)</code>
+                 🌟 Рейтинг: {winner.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0}*)</code> — {loser.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0}*)</code>
                  """), token);
         }
     }
