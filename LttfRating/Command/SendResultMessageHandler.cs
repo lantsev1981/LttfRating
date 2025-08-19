@@ -22,7 +22,7 @@ public class SendResultMessageHandler(
 
              <b>@{winner.Login} 🆚 @{loser.Login}</b>
              <code>┌───────────┐
-             {match.WinnerSetCount} {ToEmojiDigits(lastSet.WonPoint, "00")} — {ToEmojiDigits(lastSet.LostPoint, "00")} {match.LoserSetCount}
+             {match.WinnerSetCount} {lastSet.WonPoint.ToEmojiDigits("00")} — {lastSet.LostPoint.ToEmojiDigits("00")} {match.LoserSetCount}
              └───────────┘</code>
              """), token);
 
@@ -39,32 +39,12 @@ public class SendResultMessageHandler(
 
                  <b>🏆 @{winner.Login} 🆚 @{loser.Login}</b>
                  <code> ┌──────────┐
-                 {winnerPoints:00}   {ToEmojiDigits(match.WinnerSetCount, "0")} — {ToEmojiDigits(match.LoserSetCount, "0")}   {loserPoints:00}
+                 {winnerPoints:00}   {match.WinnerSetCount.ToEmojiDigits("0")} — {match.LoserSetCount.ToEmojiDigits("0")}   {loserPoints:00}
                   └──────────┘</code>
 
                  📊 Изменение рейтинга:
                  {winner.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0})</code> — {loser.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0})</code>
                  """), token);
         }
-    }
-
-    static string ToEmojiDigits(int number, string format)
-    {
-        var digits = number.ToString(format).ToCharArray();
-        var emojiDigits = digits.Select(d => d switch
-        {
-            '0' => "0️⃣",
-            '1' => "1️⃣",
-            '2' => "2️⃣",
-            '3' => "3️⃣",
-            '4' => "4️⃣",
-            '5' => "5️⃣",
-            '6' => "6️⃣",
-            '7' => "7️⃣",
-            '8' => "8️⃣",
-            '9' => "9️⃣",
-            _ => d.ToString()
-        });
-        return string.Join("", emojiDigits);
     }
 }

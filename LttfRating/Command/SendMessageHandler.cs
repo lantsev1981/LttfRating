@@ -1,6 +1,7 @@
 ﻿namespace LttfRating;
 
-public record SendMessageCommand(long ChatId, string MessageText, string? FileName = null) : IRequest;
+public record SendMessageCommand(long ChatId, string MessageText, string? FileName = null,
+    InlineKeyboardMarkup? Buttons = null) : IRequest;
 
 public class SendMessageHandler(
     ITelegramBotClient botClient,
@@ -17,6 +18,7 @@ public class SendMessageHandler(
                     chatId: request.ChatId,
                     parseMode: ParseMode.Html,
                     text: request.MessageText,
+                    replyMarkup: request.Buttons,
                     cancellationToken: token);
             }
             else
@@ -27,6 +29,7 @@ public class SendMessageHandler(
                     photo: new InputFileStream(stream),
                     parseMode: ParseMode.Html,
                     caption: request.MessageText,
+                    replyMarkup: request.Buttons,
                     cancellationToken: token);
             }
         }

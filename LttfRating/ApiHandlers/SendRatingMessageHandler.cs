@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record SendRatingMessageCommand(Message Message) : IRequest;
+public record SendRatingMessageCommand(Message Message, string? ViewLogin) : IRequest;
 
 public class SendRatingMessageHandler(
     IGamerStore gamerStore,
@@ -15,29 +15,19 @@ public class SendRatingMessageHandler(
             .OrderByDescending(p => p.Rating)
             .ToArray();
 
+        var viewLogin = request.ViewLogin ?? request.Message.From!.Username;
         var gamer = allGamers
-            .SingleOrDefault(p => p.Login == request.Message.From!.Username);
+            .SingleOrDefault(p => p.Login == viewLogin);
 
         if (gamer == null)
         {
             await mediator.Send(new SendMessageCommand(request.Message.Chat.Id,
-                "Вы пока не участвуете в рейтинге."), token);
+                $"@{viewLogin} - пока нет в рейтинге."), token);
             return;
         }
 
         // Место в рейтинге
         int place = Array.IndexOf(allGamers, gamer) + 1;
-
-        // Эмодзи в зависимости от позиции
-        string placeEmoji = place switch
-        {
-            1 => "🥇",
-            2 => "🥈",
-            3 => "🥉",
-            <= 5 => "🚀",
-            <= 10 => "🎯",
-            _ => "📌"
-        };
 
         // Эмодзи для рейтинга
         string ratingEmoji = (gamer.Rating * 100) switch
@@ -51,20 +41,25 @@ public class SendRatingMessageHandler(
         };
 
         // Соседи по рейтингу
+        var inlineKeyboard = new List<InlineKeyboardButton>();
         string? above = null, below = null;
 
         if (place > 1)
         {
             var higher = allGamers[place - 2]; // место выше — индекс (place-2)
             int diff = (int)((higher.Rating - gamer.Rating) * 100);
-            above = $"<i>Место: {place - 1} @{higher.Login} • Рейтинг: {higher.Rating * 100:F0} ({(diff >= 0 ? "+" : "")}{diff})</i>";
+            var higherPlace = place - 1;
+            above = $"<i>{higherPlace.ToEmojiPosition()} @{higher.Login} • Рейтинг: {higher.Rating * 100:F0} ({(diff >= 0 ? "+" : "")}{diff})</i>";
+            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"📊 @{higher.Login}", $"/rating {higher.Login}"));
         }
 
         if (place < allGamers.Length)
         {
             var lower = allGamers[place]; // место ниже — индекс (place)
             int diff = (int)((lower.Rating - gamer.Rating) * 100);
-            below = $"<i>Место: {place + 1} @{lower.Login} • Рейтинг: {lower.Rating * 100:F0} ({diff})</i>";
+            var lowerPlace = place + 1;
+            below = $"<i>{lowerPlace.ToEmojiPosition()} @{lower.Login} • Рейтинг: {lower.Rating * 100:F0} ({diff})</i>";
+            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"📊 @{lower.Login}", $"/rating {lower.Login}"));
         }
 
         // Группировка матчей по противникам
@@ -73,7 +68,7 @@ public class SendRatingMessageHandler(
             .GroupBy(m => m.Opponent(gamer))
             .Select(g => new
             {
-                Opponent = g.Key.Login,
+                Opponent = g.Key,
                 Wins = g.Count(m => m.LastWinner == gamer),
                 Losses = g.Count(m => m.LastWinner != gamer),
                 PointsWon = g.Sum(m => m.Sets.Sum(s => s.GetPoints(gamer.Login))),
@@ -117,12 +112,15 @@ public class SendRatingMessageHandler(
 
         // Формирование сообщения
         var opponentsView = string.Join("\n", statsByOpponent.Select(s =>
-            $"<b>@{s.Opponent}</b>: {s.Wins}-{s.Losses} <i>({(s.PointsWon - s.PointsLost >= 0 ? "+" : "")}{s.PointsWon - s.PointsLost})</i>"));
+        {
+            var opponentPlace = Array.IndexOf(allGamers, s.Opponent) + 1;
+            return $"<b>{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}</b>: {s.Wins}-{s.Losses} <i>({(s.PointsWon - s.PointsLost >= 0 ? "+" : "")}{s.PointsWon - s.PointsLost})</i>";
+        }));
 
         await mediator.Send(new SendMessageCommand(request.Message.Chat.Id,
             $"""
              {above ?? ""}
-             {placeEmoji} <b>Место: {place}</b> из {allGamers.Length} • Рейтинг: {gamer.Rating * 100:F0} {ratingEmoji}
+             <b>{place.ToEmojiPosition()} </b> @{gamer.Login} • Рейтинг: {gamer.Rating * 100:F0} {ratingEmoji}
              {below ?? ""}
 
              🏓 Всего матчей: {totalWins + totalLosses}
@@ -132,6 +130,6 @@ public class SendRatingMessageHandler(
 
              📋 Статистика по соперникам:
              {opponentsView}
-             """), token);
+             """, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
     }
 }

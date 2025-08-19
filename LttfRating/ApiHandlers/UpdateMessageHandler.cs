@@ -104,13 +104,36 @@ public class UpdateMessageHandler(
                             break;
                         case "/rating@LttfRatingBot":
                         case "/rating":
-                            await mediator.Send(new SendRatingMessageCommand(update.Message), token);
+                            var viewLogin = commandAndArg.Length == 2 ? commandAndArg[1].TrimStart('@') : null;
+                            await mediator.Send(new SendRatingMessageCommand(update.Message, viewLogin), token);
                             break;
                         default:
                             await mediator.Send(new SetValueMessageCommand(update.Message), token);
                             break;
                     }
 
+                    break;
+                }
+                case UpdateType.CallbackQuery:
+                {
+                    if (update.CallbackQuery!.Data is null || update.CallbackQuery.Message is null)
+                    {
+                        logger.LogTrace("Сообщение не содержит текст");
+                        break;
+                    }
+
+                    logger.LogTrace("Пришло сообщение: {Text} от @{Username}",
+                        update.CallbackQuery!.Data, user.Username);
+                    
+                    var commandAndArg = update.CallbackQuery.Data.Split(' ');
+                    switch (commandAndArg[0])
+                    {
+                        case "/rating@LttfRatingBot":
+                        case "/rating":
+                            await mediator.Send(new SendRatingMessageCommand(update.CallbackQuery.Message!, commandAndArg.Length == 2 ? commandAndArg[1] : null), token);
+                            break;
+                    }
+                    
                     break;
                 }
 
