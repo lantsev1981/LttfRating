@@ -17,13 +17,13 @@ public class UpdateMessageHandler(
         
         try
         {
-            var user = GetUser(update);
+            var data = update.GetData();
 
-            if (user.Username is null)
+            if (data.User.Login is "")
             {
-                logger.LogTrace("Отсутствует логин {UserId}", user.Id);
+                logger.LogTrace("Отсутствует логин {UserId}", data.User.Id);
 
-                await mediator.Send(new SendMessageCommand(user.Id,
+                await mediator.Send(new SendMessageCommand(data.User.Id,
                     $"""
                      ⚠️ <b>Привет! Для работы с ботом необходимо указать в настройках профиля логин</b>
 
@@ -36,7 +36,7 @@ public class UpdateMessageHandler(
                 return;
             }
 
-            if (await mediator.Send(new AddGamerCommand(user.Username, user.Id), token))
+            if (await mediator.Send(new AddGamerCommand(data.User.Login, data.User.Id), token))
             {
                 var admin = await store.GetAdminGamerId(token);
 
@@ -47,11 +47,11 @@ public class UpdateMessageHandler(
                          🆕 <b>НОВЫЙ ПОЛЬЗОВАТЕЛЬ</b>
                          ━━━━━━━━━━━━━━━━━━━
 
-                         ├ ID: <code>{user.Id}</code>
-                         ├ Логин: @{user.Username ?? "-"}
-                         ├ Имя: {user.FirstName}
-                         ├ Фамилия: {user.LastName ?? "-"}
-                         └ Язык: {user.LanguageCode ?? "-"}
+                         ├ ID: <code>{data.User.BaseUser.Id}</code>
+                         ├ Логин: @{data.User.BaseUser.Username ?? "-"}
+                         ├ Имя: {data.User.BaseUser.FirstName}
+                         ├ Фамилия: {data.User.BaseUser.LastName ?? "-"}
+                         └ Язык: {data.User.BaseUser.LanguageCode ?? "-"}
                          """), token);
                 }
             }
@@ -60,28 +60,28 @@ public class UpdateMessageHandler(
             {
                 case UpdateType.MessageReaction:
                 {
-                    await mediator.Send(new DeleteSetCommand(update.MessageReaction!), token);
-
+                    await mediator.Send(new DeleteSetCommand(data), token);
                     break;
                 }
+                case UpdateType.CallbackQuery:
                 case UpdateType.Message:
                 {
-                    if (update.Message!.Text is null)
+                    if (string.IsNullOrWhiteSpace(data.Text))
                     {
                         logger.LogTrace("Сообщение не содержит текст");
                         break;
                     }
 
                     logger.LogTrace("Пришло сообщение: {Text} от @{Username}",
-                        update.Message.Text, user.Username);
+                        data.Text, data.User.Login);
 
-                    var commandAndArg = update.Message.Text.Split(' ');
+                    var commandAndArg = data.Text.Split(' ');
                     switch (commandAndArg[0])
                     {
                         case "/start@LttfRatingBot":
                         case "/start":
-
-                            await mediator.Send(new SendMessageCommand(user.Id,
+                        {
+                            await mediator.Send(new SendMessageCommand(data.User.Id,
                                 """
                                 🤖 <b>Добро пожаловать в бот учёта рейтинга Lttf игроков в настольный теннис!</b>
 
@@ -103,90 +103,49 @@ public class UpdateMessageHandler(
                                 """, "LttfRatingBotQr.jpg"), token);
 
                             break;
-                        
+                        }
                         case "/recalculate@LttfRatingBot":
                         case "/recalculate":
-                            await mediator.Send(new RecalculateRatingMessageCommand(update.Message.From!.Username!), token);
+                        {
+                            await mediator.Send(new RecalculateRatingMessageCommand(data), token);
                             break;
+                        }
                         case "/rating@LttfRatingBot":
                         case "/rating":
-                            
-                            var viewLogin = commandAndArg.Length > 1 ? commandAndArg[1].TrimStart('@') : null;
+                        {
+                            switch (commandAndArg.Length)
+                            {
+                                case 3:
+                                    await mediator.Send(new SendCompareMessageCommand(data), token);
+                                    break;
+                                default:
+                                    await mediator.Send(new SendRatingMessageCommand(data), token);
+                                    break;
+                            }
 
-                            if (commandAndArg.Length >= 3)
-                            {
-                                var opponentLogin = commandAndArg[2].TrimStart('@');
-                                await mediator.Send(new SendCompareMessageCommand(update.Message, viewLogin!, opponentLogin), token);
-                            }
-                            else
-                            {
-                                await mediator.Send(new SendRatingMessageCommand(update.Message, viewLogin), token);
-                            }
-                            
                             break;
+                        }
                         default:
-                            await mediator.Send(new SetValueMessageCommand(update.Message), token);
+                        {
+                            await mediator.Send(new SetValueMessageCommand(data), token);
                             break;
+                        }
                     }
 
-                    break;
-                }
-                case UpdateType.CallbackQuery:
-                {
-                    if (update.CallbackQuery!.Data is null || update.CallbackQuery.Message is null)
-                    {
-                        logger.LogTrace("Сообщение не содержит текст");
-                        break;
-                    }
-
-                    logger.LogTrace("Пришло сообщение: {Text} от @{Username}",
-                        update.CallbackQuery!.Data, user.Username);
-                    
-                    var commandAndArg = update.CallbackQuery.Data.Split(' ');
-                    switch (commandAndArg[0])
-                    {
-                        case "/rating@LttfRatingBot":
-                        case "/rating":
-                            await mediator.Send(new SendRatingMessageCommand(update.CallbackQuery.Message!, commandAndArg.Length == 2 ? commandAndArg[1] : null), token);
-                            break;
-                    }
-                    
                     break;
                 }
 
                 // Другие типы можно добавить позже
                 default:
+                {
                     logger.LogTrace("Необработанный тип сообщения: {Type}", update.Type);
                     break;
+                }
             }
         }
         catch (Exception ex)
         {
             await errorHandler.HandleAsync(botClient, ex, token);
         }
-    }
-
-    private User GetUser(Update update)
-    {
-        User? user = update.Type switch
-        {
-            UpdateType.Message => update.Message?.From,
-            UpdateType.EditedMessage => update.EditedMessage?.From,
-            UpdateType.MessageReaction => update.MessageReaction?.User,
-            UpdateType.CallbackQuery => update.CallbackQuery?.From,
-            UpdateType.InlineQuery => update.InlineQuery?.From,
-            UpdateType.ChosenInlineResult => update.ChosenInlineResult?.From,
-            UpdateType.ShippingQuery => update.ShippingQuery?.From,
-            UpdateType.PreCheckoutQuery => update.PreCheckoutQuery?.From,
-            UpdateType.PollAnswer => update.PollAnswer?.User,
-            UpdateType.BusinessMessage => update.BusinessMessage?.From,
-            UpdateType.EditedBusinessMessage => update.EditedBusinessMessage?.From,
-
-            _ => throw new ArgumentOutOfRangeException(nameof(update.Type))
-        };
-
-        return user ?? throw new ArgumentNullException(
-            paramName: nameof(user),
-            message: $"User not found in {update.Type} update");
     }
 }

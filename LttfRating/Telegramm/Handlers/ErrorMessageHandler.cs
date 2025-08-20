@@ -10,12 +10,12 @@ public class ErrorMessageHandler(
         using var scope = serviceProvider.CreateScope();
         var store = scope.ServiceProvider.GetRequiredService<IGamerStore>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        
-        var errorMessage = error switch
+
+        string errorMessage = error switch
         {
             ApiRequestException apiRequestException
-                => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
-            _ => error.Message
+                => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{string.Join(',', apiRequestException.GetAllMessages())}",
+            _ => string.Join(',', error.GetAllMessages())
         };
 
         logger.LogError(error, "[Ошибка] {ErrorMessage}", errorMessage);
@@ -32,20 +32,7 @@ public class ErrorMessageHandler(
              ⚠️ <b>Тип ошибки:</b> <code>{error.GetType().Name}</code>
 
              📝 <b>Сообщение:</b>
-             <pre>{EscapeHtml(errorMessage)}</pre>
+             <pre>{errorMessage.EscapeHtml()}</pre>
              """), token);
-    }
-
-    private static string EscapeHtml(string text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return text;
-
-        return text
-            .Replace("&", "&amp;")
-            .Replace("<", "&lt;")
-            .Replace(">", "&gt;")
-            .Replace("\"", "&quot;")
-            .Replace("'", "&apos;");
     }
 }

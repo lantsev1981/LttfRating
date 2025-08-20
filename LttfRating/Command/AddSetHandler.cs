@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record AddSetCommand(Guid MatchId, SetValue[] SetValues, long ChatId, int MessageId) : IRequest;
+public record AddSetCommand(TelegramApiData Data, Guid MatchId, SetValue[] SetValues) : IRequest;
 
 public class AddSetHandler(
     IDomainStore<Match> store,
@@ -26,8 +26,8 @@ public class AddSetHandler(
             request.SetValues[0].Points,
             request.SetValues[1].Points,
             winner,
-            request.ChatId,
-            request.MessageId);
+            request.Data.ChatId,
+            request.Data.MessageId);
 
         match.Sets.Add(set);
 

@@ -15,4 +15,17 @@ public static class ExceptionExtensions
         }
         return messages;
     }
+    
+    public static string EscapeHtml(this string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        return text
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&apos;");
+    }
 }

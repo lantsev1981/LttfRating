@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record SetValueMessageCommand(Message Message) : IRequest;
+public record SetValueMessageCommand(TelegramApiData Data) : IRequest;
 
 public class SetValueMessageHandler(
     ILogger<SetValueMessageHandler> logger,
@@ -12,10 +12,10 @@ public class SetValueMessageHandler(
 
     public async Task Handle(SetValueMessageCommand request, CancellationToken token)
     {
-        var sender = request.Message.From!.Username!;
+        var sender = request.Data.User.Login;
 
-        var setValues = ParseMatch(request.Message.Text!, sender);
-        if (setValues == null || !await ValueValidation(setValues, request.Message, token))
+        var setValues = ParseMatch(request.Data.Text!, sender);
+        if (setValues == null || !await ValueValidation(request.Data, setValues, token))
         {
             logger.LogTrace("Сообщение не соответствует паттерну {Pattern}", nameof(ParseMatch));
             return;
@@ -25,7 +25,7 @@ public class SetValueMessageHandler(
         var isGamer = setValues.Select(p => p.Login).Contains(sender);
         if (!isAdmin && !isGamer)
         {
-            await SendValidationError(request.Message.Chat.Id, sender,
+            await SendValidationError(request.Data.ChatId, sender,
                 "результаты матча может отправить только участник партии", token);
 
             return;
@@ -36,9 +36,8 @@ public class SetValueMessageHandler(
 
         var matchId = await mediator.Send(new GetOrAddMatchCommand(
             setValues[0].Login, setValues[1].Login), token);
-        await mediator.Send(new AddSetCommand(matchId, setValues, request.Message.Chat.Id, request.Message.MessageId),
-            token);
-        await mediator.Send(new SendResultMessageCommand(request.Message.Chat.Id, matchId), token);
+        await mediator.Send(new AddSetCommand(request.Data, matchId, setValues), token);
+        await mediator.Send(new SendResultMessageCommand(request.Data.ChatId, matchId), token);
     }
 
     private static SetValue[]? ParseMatch(string text, string senderLogin)
@@ -83,22 +82,22 @@ public class SetValueMessageHandler(
         return result;
     }
 
-    private async Task<bool> ValueValidation(SetValue[] setValue, Message message, CancellationToken token)
+    private async Task<bool> ValueValidation(TelegramApiData date, SetValue[] setValue, CancellationToken token)
     {
         var winner = setValue[0];
         var loser = setValue[1];
-        var username = message.From!.Username!;
+        var username = date.User.Login;
     
         if (winner.Login == loser.Login)
         {
-            await SendValidationError(message.Chat.Id, username,
+            await SendValidationError(date.ChatId, username,
                 "указан одинаковый логин для обоих игроков", token);
             return false;
         }
 
         if (winner.Points < 11)
         {
-            await SendValidationError(message.Chat.Id, username,
+            await SendValidationError(date.ChatId, username,
                 "результат победителя должен быть не менее 11 очков", token);
             return false;
         }
@@ -107,14 +106,14 @@ public class SetValueMessageHandler(
     
         if (winner.Points == 11 && pointDiff < 2)
         {
-            await SendValidationError(message.Chat.Id, username,
+            await SendValidationError(date.ChatId, username,
                 "разница в очках должна быть не менее 2", token);
             return false;
         }
 
         if (winner.Points > 11 && pointDiff != 2)
         {
-            await SendValidationError(message.Chat.Id, username,
+            await SendValidationError(date.ChatId, username,
                 "при игре на больше/меньше разница должна быть в 2 очка", token);
             return false;
         }

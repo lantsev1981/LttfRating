@@ -1,7 +1,11 @@
 ﻿namespace LttfRating;
 
-public record SendMessageCommand(long ChatId, string MessageText, string? FileName = null,
-    InlineKeyboardMarkup? Buttons = null) : IRequest;
+public record SendMessageCommand(
+    long ChatId,
+    string MessageText,
+    string? FileName = null,
+    InlineKeyboardMarkup? Buttons = null)
+    : IRequest;
 
 public class SendMessageHandler(
     ITelegramBotClient botClient,

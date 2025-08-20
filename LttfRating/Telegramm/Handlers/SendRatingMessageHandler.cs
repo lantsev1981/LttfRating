@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record SendRatingMessageCommand(Message Message, string? ViewLogin) : IRequest;
+public record SendRatingMessageCommand(TelegramApiData Data) : IRequest;
 
 public class SendRatingMessageHandler(
     IGamerStore gamerStore,
@@ -9,18 +9,20 @@ public class SendRatingMessageHandler(
 {
     public async Task Handle(SendRatingMessageCommand request, CancellationToken token)
     {
+        var text = request.Data.Text.Split(' ');
+        string viewLogin = text.Length == 1 ? request.Data.User.Login : text[1].TrimStart('@');
+        
         var allGamers = (await gamerStore.GetItems(token))
             .Where(p => p.Rating != 1) // исключаем "нейтральных"
             .OrderByDescending(p => p.Rating)
             .ToArray();
 
-        var viewLogin = request.ViewLogin ?? request.Message.From!.Username;
         var gamer = allGamers
             .SingleOrDefault(p => p.Login == viewLogin);
 
         if (gamer == null)
         {
-            await mediator.Send(new SendMessageCommand(request.Message.Chat.Id,
+            await mediator.Send(new SendMessageCommand(request.Data.ChatId,
                 $"@{viewLogin} - пока нет в рейтинге."), token);
             return;
         }
@@ -105,7 +107,7 @@ public class SendRatingMessageHandler(
             return $"{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}: <b> {s.Wins} — {s.Losses} </b> <code>({(s.PointsWon - s.PointsLost >= 0 ? "+" : "")}{s.PointsWon - s.PointsLost}●)</code>";
         }));
 
-        await mediator.Send(new SendMessageCommand(request.Message.Chat.Id,
+        await mediator.Send(new SendMessageCommand(request.Data.ChatId,
             $"""
              В общем зачёте:
              {above ?? ""}

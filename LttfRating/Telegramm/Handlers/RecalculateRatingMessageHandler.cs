@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record RecalculateRatingMessageCommand(string Login) : IRequest;
+public record RecalculateRatingMessageCommand(TelegramApiData Data) : IRequest;
 
 public class RecalculateRatingMessageHandler(
     IDomainStore<Match> matchStore,
@@ -12,7 +12,7 @@ public class RecalculateRatingMessageHandler(
     public async Task Handle(RecalculateRatingMessageCommand request, CancellationToken token)
     {
         var admin = await gamerStore.GetAdminGamerId(token);
-        if (admin?.Login != request.Login)
+        if (admin?.Login != request.Data.User.Login)
             return;
 
         var gamers =await gamerStore.GetItems(token);

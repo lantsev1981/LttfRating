@@ -1,17 +1,23 @@
 ﻿namespace LttfRating;
 
-public record SendCompareMessageCommand(Message Message, string GamerLogin1, string GamerLogin2) : IRequest;
+public record SendCompareMessageCommand(TelegramApiData Data) : IRequest;
 
 public class SendCompareMessageHandler(
     IGamerStore gamerStore,
-    IMediator mediator,
-    ILogger<SendCompareMessageHandler> logger)
+    IMediator mediator)
     : IRequestHandler<SendCompareMessageCommand>
 {
     public async Task Handle(SendCompareMessageCommand request, CancellationToken token)
     {
-        var gamer1 = await gamerStore.GetByKey(request.GamerLogin1, token);
-        var gamer2 = await gamerStore.GetByKey(request.GamerLogin2, token);
+        var text = request.Data.Text.Split(' ');
+        
+        string gamerLogin1 = text[1].TrimStart('@');
+        string gamerLogin2 = text[2].TrimStart('@');
+        if (gamerLogin1 == gamerLogin2)
+            return;
+            
+        var gamer1 = await gamerStore.GetByKey(gamerLogin1, token);
+        var gamer2 = await gamerStore.GetByKey(gamerLogin2, token);
         if (gamer1 is null || gamer2 is null)
             return;
 
@@ -19,7 +25,7 @@ public class SendCompareMessageHandler(
 
         if (commonMatches.Length == 0)
         {
-            await mediator.Send(new SendMessageCommand(request.Message.Chat.Id,
+            await mediator.Send(new SendMessageCommand(request.Data.ChatId,
                 $"""
                  <b>{gamer1.Login} 🆚 {gamer2.Login}</b>
                  <i>Нет завершённых матчей</i>
@@ -28,7 +34,7 @@ public class SendCompareMessageHandler(
             return;
         }
 
-        await mediator.Send(new SendMessageCommand(request.Message.Chat.Id,
+        await mediator.Send(new SendMessageCommand(request.Data.ChatId,
             $"""
              {GetHeadToHeadStats(gamer1, gamer2, commonMatches)}
 
@@ -103,7 +109,7 @@ public class SendCompareMessageHandler(
     {
         return gamer1.Matches
             .Where(m => !m.IsPending && m.Gamers.Contains(gamer2))
-            .OrderBy(m => m.Date)
+            .OrderByDate()
             .ToArray();
     }
 }

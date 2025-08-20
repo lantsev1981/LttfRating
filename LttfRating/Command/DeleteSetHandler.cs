@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record DeleteSetCommand(MessageReactionUpdated MessageReaction) : IRequest;
+public record DeleteSetCommand(TelegramApiData Data) : IRequest;
 
 public class DeleteSetHandler(
     IOptions<ApiConfig> config,
@@ -14,19 +14,18 @@ public class DeleteSetHandler(
 
     public async Task Handle(DeleteSetCommand request, CancellationToken token)
     {
-        if (request.MessageReaction.NewReaction.LastOrDefault(p => p.Type == ReactionTypeKind.Emoji)
-            is not ReactionTypeEmoji { Emoji: "👎" })
+        if (request.Data.Text.EndsWith("👎"))
             return;
 
         var set = await setStore.GetByKey(new ChatMessage(
-                request.MessageReaction.Chat.Id,
-                request.MessageReaction.MessageId),
+                request.Data.ChatId,
+                request.Data.MessageId),
             token);
 
         if (set is null)
             return;
 
-        var sender = request.MessageReaction.User!.Username!;
+        var sender = request.Data.User.Login;
         var isAdmin = _config.Administrators.Contains(sender);
         var isGamer = set.Match.Gamers.Any(p => p.Login == sender);
         if (isAdmin || isGamer)
@@ -34,7 +33,7 @@ public class DeleteSetHandler(
             // игрок может отменить игру только в течении часа
             if (!isAdmin && DateTimeOffset.UtcNow - set.Date > TimeSpan.FromHours(1))
             {
-                await mediator.Send(new SendMessageCommand(request.MessageReaction.User.Id,
+                await mediator.Send(new SendMessageCommand(request.Data.User.Id,
                     $"""
                      ⚠️ <b>Вы не можете отменить партию</b>
 
