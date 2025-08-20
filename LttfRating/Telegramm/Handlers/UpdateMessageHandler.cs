@@ -11,7 +11,7 @@ public class UpdateMessageHandler(
     {
         // Зарегистрированы как Singleton, а нужен на каждый запрос новый AppContext
         using var scope = serviceProvider.CreateScope();
-        var store = scope.ServiceProvider.GetRequiredService<IGamerStore>();
+        var store = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var errorHandler = scope.ServiceProvider.GetRequiredService<ErrorMessageHandler>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         
@@ -38,7 +38,7 @@ public class UpdateMessageHandler(
 
             if (await mediator.Send(new AddGamerCommand(data.User.Login, data.User.Id), token))
             {
-                var admin = await store.GetAdminGamerId(token);
+                var admin = await store.GameStore.GetAdminGamerId(token);
 
                 if (admin?.UserId is not null)
                 {

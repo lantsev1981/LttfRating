@@ -44,6 +44,7 @@ class Program
             .AddTransient<IDomainStore<Gamer>, GamerStore>()
             .AddTransient<IDomainStore<Match>, MatchStore>()
             .AddTransient<IDomainStore<Set>, SetStore>()
+            .AddTransient<IUnitOfWork, UnitOfWork>()
             .AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(
                     configuration.GetConnectionString("AppUserConnectionString"),

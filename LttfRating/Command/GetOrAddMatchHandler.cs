@@ -3,18 +3,18 @@
 public record GetOrAddMatchCommand(string Winner, string Loser) : IRequest<Guid>;
 
 public class GetOrAddMatchHandler(
-    IDomainStore<Gamer> store,
+    IUnitOfWork store,
     ILogger<GetOrAddMatchHandler> logger)
     : IRequestHandler<GetOrAddMatchCommand, Guid>
 {
     public async Task<Guid> Handle(GetOrAddMatchCommand request, CancellationToken token)
     {
-        var winner = await store.GetByKey(request.Winner, token, q => q
+        var winner = await store.GameStore.GetByKey(request.Winner, token, q => q
                          .Include(p => p.Matches)
                          .ThenInclude(p => p.Gamers))
                      ?? throw new NullReferenceException($"Игрок {request.Winner} не найден");
         
-        var loser = await store.GetByKey(request.Loser, token)
+        var loser = await store.GameStore.GetByKey(request.Loser, token)
                     ?? throw new NullReferenceException($"Игрок {request.Loser} не найден");
 
         // Из-за удаления партий, может быть несколько открытых матчей
@@ -36,7 +36,7 @@ public class GetOrAddMatchHandler(
 
             winner.Matches.Add(match);
 
-            await store.Update(winner, token);
+            await store.GameStore.Update(winner, token);
         }
 
         return match.Id;

@@ -3,7 +3,7 @@
 public record AddSetCommand(TelegramApiData Data, Guid MatchId, SetValue[] SetValues) : IRequest;
 
 public class AddSetHandler(
-    IDomainStore<Match> store,
+    IUnitOfWork store,
     ILogger<AddSetHandler> logger)
     : IRequestHandler<AddSetCommand>
 {
@@ -18,7 +18,8 @@ public class AddSetHandler(
             request.SetValues[1].Points,
             loser);
 
-        var match = await store.GetByKey(request.MatchId, token, q => q
+        var match = await store.MatchStore.GetByKey(request.MatchId, token, q => q
+                        .Include(p => p.Gamers)
                         .Include(p => p.Sets))
                     ?? throw new NullReferenceException($"Матч {request.MatchId} не найден");
 
@@ -42,6 +43,6 @@ public class AddSetHandler(
             match.CalculateRating();
         }
 
-        await store.Update(match, token);
+        await store.MatchStore.Update(match, token);
     }
 }

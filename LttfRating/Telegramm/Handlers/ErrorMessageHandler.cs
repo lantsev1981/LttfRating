@@ -8,7 +8,7 @@ public class ErrorMessageHandler(
     {
         // Зарегистрированы как Singleton, а нужен на каждый запрос новый AppContext
         using var scope = serviceProvider.CreateScope();
-        var store = scope.ServiceProvider.GetRequiredService<IGamerStore>();
+        var store = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         string errorMessage = error switch
@@ -20,7 +20,7 @@ public class ErrorMessageHandler(
 
         logger.LogError(error, "[Ошибка] {ErrorMessage}", errorMessage);
 
-        var admin = await store.GetAdminGamerId(token);
+        var admin = await store.GameStore.GetAdminGamerId(token);
         if (admin?.UserId is null)
             return;
 

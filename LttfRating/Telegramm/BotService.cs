@@ -1,5 +1,10 @@
 ﻿namespace LttfRating;
 
+internal interface IBotService
+{
+    Task StartAsync(CancellationToken token);
+}
+
 public class BotService(
     ITelegramBotClient botClient,
     UpdateMessageHandler updateHandler,

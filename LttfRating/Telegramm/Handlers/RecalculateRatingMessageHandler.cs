@@ -3,23 +3,22 @@
 public record RecalculateRatingMessageCommand(TelegramApiData Data) : IRequest;
 
 public class RecalculateRatingMessageHandler(
-    IDomainStore<Match> matchStore,
-    IGamerStore gamerStore,
+    IUnitOfWork store,
     IMediator mediator,
     ILogger<RecalculateRatingMessageHandler> logger)
     : IRequestHandler<RecalculateRatingMessageCommand>
 {
     public async Task Handle(RecalculateRatingMessageCommand request, CancellationToken token)
     {
-        var admin = await gamerStore.GetAdminGamerId(token);
+        var admin = await store.GameStore.GetAdminGamerId(token);
         if (admin?.Login != request.Data.User.Login)
             return;
 
-        var gamers =await gamerStore.GetItems(token);
+        var gamers =await store.GameStore.GetItems(token);
         foreach (var gamer in gamers)
             gamer.Rating = 1;
 
-        foreach (var match in await matchStore.GetItems(token, q => q
+        foreach (var match in await store.MatchStore.GetItems(token, q => q
                      .Include(p => p.Gamers)
                      .Include(p => p.Sets)))
         {
@@ -45,7 +44,7 @@ public class RecalculateRatingMessageHandler(
                 ]);
         }
 
-        await matchStore.Update(null!, token);
+        await store.MatchStore.Update(null!, token);
 
         await mediator.Send(new SendMessageCommand(admin.UserId!.Value,
             $"""

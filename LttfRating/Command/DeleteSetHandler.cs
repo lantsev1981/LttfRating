@@ -4,8 +4,7 @@ public record DeleteSetCommand(TelegramApiData Data) : IRequest;
 
 public class DeleteSetHandler(
     IOptions<ApiConfig> config,
-    IDomainStore<Set> setStore,
-    IGamerStore gamerStore,
+    IUnitOfWork store,
     ILogger<DeleteSetHandler> logger,
     IMediator mediator)
     : IRequestHandler<DeleteSetCommand>
@@ -17,7 +16,7 @@ public class DeleteSetHandler(
         if (request.Data.Text.EndsWith("👎"))
             return;
 
-        var set = await setStore.GetByKey(
+        var set = await store.SetStore.GetByKey(
             new ChatMessage(request.Data.ChatId, request.Data.MessageId), token,
             q => q.Include(p => p.Match.Gamers));
 
@@ -47,11 +46,11 @@ public class DeleteSetHandler(
 
             var winner = set.Match.LastWinner;
             var loser = set.Match.LastLoser;
-            var admin = await gamerStore.GetAdminGamerId(token);
+            var admin = await store.GameStore.GetAdminGamerId(token);
 
             set.Match.IsPending = true;
-            await setStore.Update(set, token);
-            await setStore.DeleteItem(set, token);
+            await store.SetStore.Update(set, token);
+            await store.SetStore.DeleteItem(set, token);
 
             logger.LogTrace("{User} удалил партию {Set}", sender, $$"""{{{set.MatchId}}, {{set.Num}}}""");
 

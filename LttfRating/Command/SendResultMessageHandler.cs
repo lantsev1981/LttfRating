@@ -3,13 +3,13 @@
 public record SendResultMessageCommand(long ChatId, Guid MatchId) : IRequest;
 
 public class SendResultMessageHandler(
-    IDomainStore<Match> store,
+    IUnitOfWork store,
     IMediator mediator)
     : IRequestHandler<SendResultMessageCommand>
 {
     public async Task Handle(SendResultMessageCommand request, CancellationToken token)
     {
-        var match = await store.GetByKey(request.MatchId, token, q => q
+        var match = await store.MatchStore.GetByKey(request.MatchId, token, q => q
                         .Include(p => p.Gamers)
                         .Include(p => p.Sets))
                     ?? throw new NullReferenceException($"Матч {request.MatchId} не найден");

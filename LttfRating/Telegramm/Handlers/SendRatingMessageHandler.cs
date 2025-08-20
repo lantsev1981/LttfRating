@@ -3,7 +3,7 @@
 public record SendRatingMessageCommand(TelegramApiData Data) : IRequest;
 
 public class SendRatingMessageHandler(
-    IGamerStore gamerStore,
+    IUnitOfWork store,
     IMediator mediator)
     : IRequestHandler<SendRatingMessageCommand>
 {
@@ -12,12 +12,12 @@ public class SendRatingMessageHandler(
         var text = request.Data.Text.Split(' ');
         string viewLogin = text.Length == 1 ? request.Data.User.Login : text[1].TrimStart('@');
         
-        var allGamers = (await gamerStore.GetItems(token))
+        var allGamers = (await store.GameStore.GetItems(token))
             .Where(p => p.Rating != 1) // исключаем "нейтральных"
             .OrderByDescending(p => p.Rating)
             .ToArray();
 
-        var gamer = await gamerStore.GetByKey(viewLogin, token, q => q
+        var gamer = await store.GameStore.GetByKey(viewLogin, token, q => q
                 .Include(p => p.Matches)
                 .ThenInclude(p => p.Gamers)
                 .Include(p => p.Matches)

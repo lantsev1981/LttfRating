@@ -3,7 +3,7 @@
 public record SendCompareMessageCommand(TelegramApiData Data) : IRequest;
 
 public class SendCompareMessageHandler(
-    IGamerStore gamerStore,
+    IUnitOfWork store,
     IMediator mediator)
     : IRequestHandler<SendCompareMessageCommand>
 {
@@ -17,12 +17,12 @@ public class SendCompareMessageHandler(
         if (gamerLogin1 == gamerLogin2)
             return;
             
-        var gamer1 = await gamerStore.GetByKey(gamerLogin1, token, q => q
+        var gamer1 = await store.GameStore.GetByKey(gamerLogin1, token, q => q
             .Include(p => p.Matches)
             .ThenInclude(p => p.Gamers)
             .Include(p => p.Matches)
             .ThenInclude(p => p.Sets));
-        var gamer2 = await gamerStore.GetByKey(gamerLogin2, token, q => q
+        var gamer2 = await store.GameStore.GetByKey(gamerLogin2, token, q => q
             .Include(p => p.Matches)
             .ThenInclude(p => p.Gamers)
             .Include(p => p.Matches)
