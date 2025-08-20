@@ -9,7 +9,9 @@ public class SendResultMessageHandler(
 {
     public async Task Handle(SendResultMessageCommand request, CancellationToken token)
     {
-        var match = await store.GetByKey(request.MatchId, token)
+        var match = await store.GetByKey(request.MatchId, token, q => q
+                        .Include(p => p.Gamers)
+                        .Include(p => p.Sets))
                     ?? throw new NullReferenceException($"Матч {request.MatchId} не найден");
 
         var winner = match.LastWinner;

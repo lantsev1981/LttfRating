@@ -18,7 +18,8 @@ public class AddSetHandler(
             request.SetValues[1].Points,
             loser);
 
-        var match = await store.GetByKey(request.MatchId, token)
+        var match = await store.GetByKey(request.MatchId, token, q => q
+                        .Include(p => p.Sets))
                     ?? throw new NullReferenceException($"Матч {request.MatchId} не найден");
 
         var set = new Set(

@@ -19,7 +19,9 @@ public class RecalculateRatingMessageHandler(
         foreach (var gamer in gamers)
             gamer.Rating = 1;
 
-        foreach (var match in await matchStore.GetItems(token))
+        foreach (var match in await matchStore.GetItems(token, q => q
+                     .Include(p => p.Gamers)
+                     .Include(p => p.Sets)))
         {
             match.CalculateRating();
 

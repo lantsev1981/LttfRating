@@ -17,8 +17,11 @@ public class SendRatingMessageHandler(
             .OrderByDescending(p => p.Rating)
             .ToArray();
 
-        var gamer = allGamers
-            .SingleOrDefault(p => p.Login == viewLogin);
+        var gamer = await gamerStore.GetByKey(viewLogin, token, q => q
+                .Include(p => p.Matches)
+                .ThenInclude(p => p.Gamers)
+                .Include(p => p.Matches)
+                .ThenInclude(p => p.Sets));
 
         if (gamer == null)
         {

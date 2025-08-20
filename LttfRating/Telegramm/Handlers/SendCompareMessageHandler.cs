@@ -13,11 +13,21 @@ public class SendCompareMessageHandler(
         
         string gamerLogin1 = text[1].TrimStart('@');
         string gamerLogin2 = text[2].TrimStart('@');
+        
         if (gamerLogin1 == gamerLogin2)
             return;
             
-        var gamer1 = await gamerStore.GetByKey(gamerLogin1, token);
-        var gamer2 = await gamerStore.GetByKey(gamerLogin2, token);
+        var gamer1 = await gamerStore.GetByKey(gamerLogin1, token, q => q
+            .Include(p => p.Matches)
+            .ThenInclude(p => p.Gamers)
+            .Include(p => p.Matches)
+            .ThenInclude(p => p.Sets));
+        var gamer2 = await gamerStore.GetByKey(gamerLogin2, token, q => q
+            .Include(p => p.Matches)
+            .ThenInclude(p => p.Gamers)
+            .Include(p => p.Matches)
+            .ThenInclude(p => p.Sets));
+        
         if (gamer1 is null || gamer2 is null)
             return;
 

@@ -17,10 +17,9 @@ public class DeleteSetHandler(
         if (request.Data.Text.EndsWith("👎"))
             return;
 
-        var set = await setStore.GetByKey(new ChatMessage(
-                request.Data.ChatId,
-                request.Data.MessageId),
-            token);
+        var set = await setStore.GetByKey(
+            new ChatMessage(request.Data.ChatId, request.Data.MessageId), token,
+            q => q.Include(p => p.Match.Gamers));
 
         if (set is null)
             return;

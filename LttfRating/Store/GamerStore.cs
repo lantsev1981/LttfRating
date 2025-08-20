@@ -9,17 +9,36 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
 {
     private readonly ApiConfig _config = config.Value;
 
-    public async Task<Gamer?> GetByKey<TKey>(TKey id, CancellationToken token)
+    public async Task<Gamer?> GetByKey<TKey>(TKey id, CancellationToken token,
+        Func<IQueryable<Gamer>, IQueryable<Gamer>>? includeQuery = null)
     {
-        return id is string login
-            ? await context.Gamers
-                .Include(p => p.Matches)
-                .ThenInclude(p => p.Gamers)
-                .Include(p => p.Matches)
-                .ThenInclude(p => p.Sets)
-                .AsSplitQuery()
-                .SingleOrDefaultAsync(p => p.Login == login, token)
-            : null;
+        if (id is not string key)
+            throw new KeyNotFoundException($"Не верный тип ключа {id?.GetType().Name}");
+        
+        var query = context.Gamers
+            .AsQueryable()
+            .AsSplitQuery();
+
+        if (includeQuery != null)
+            query = includeQuery(query);
+
+        return await query
+            .SingleOrDefaultAsync(p => p.Login == key, token);
+    }
+
+    public async Task<IEnumerable<Gamer>> GetItems(CancellationToken token,
+        Func<IQueryable<Gamer>, IQueryable<Gamer>>? includeQuery = null)
+    {
+        var query = context.Gamers
+            .AsQueryable()
+            .AsSplitQuery();
+
+        if (includeQuery != null)
+            query = includeQuery(query);
+
+        return await query
+            .OrderByDescending(p => p.Rating)
+            .ToArrayAsync(token);
     }
 
     public async Task AddAsync(Gamer item, CancellationToken token)
@@ -28,18 +47,6 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
             .AddAsync(item, token);
 
         await context.SaveChangesAsync(token);
-    }
-
-    public async Task<IEnumerable<Gamer>> GetItems(CancellationToken token)
-    {
-        return await context.Gamers
-            .Include(p => p.Matches)
-            .ThenInclude(p => p.Gamers)
-            .Include(p => p.Matches)
-            .ThenInclude(p => p.Sets)
-            .OrderByDescending(p => p.Rating)
-            .AsSplitQuery()
-            .ToArrayAsync(token);
     }
 
     public async Task Update(Gamer? item, CancellationToken token)

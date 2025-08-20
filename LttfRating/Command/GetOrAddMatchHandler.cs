@@ -9,8 +9,11 @@ public class GetOrAddMatchHandler(
 {
     public async Task<Guid> Handle(GetOrAddMatchCommand request, CancellationToken token)
     {
-        var winner = await store.GetByKey(request.Winner, token)
+        var winner = await store.GetByKey(request.Winner, token, q => q
+                         .Include(p => p.Matches)
+                         .ThenInclude(p => p.Gamers))
                      ?? throw new NullReferenceException($"Игрок {request.Winner} не найден");
+        
         var loser = await store.GetByKey(request.Loser, token)
                     ?? throw new NullReferenceException($"Игрок {request.Loser} не найден");
 
