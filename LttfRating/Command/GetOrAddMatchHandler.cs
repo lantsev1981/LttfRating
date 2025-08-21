@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record GetOrAddMatchCommand(string Winner, string Loser) : IRequest<Guid>;
+public record GetOrAddMatchCommand(string Winner, string Loser, byte SetWonCount) : IRequest<Guid>;
 
 public class GetOrAddMatchHandler(
     IUnitOfWork store,
@@ -29,7 +29,7 @@ public class GetOrAddMatchHandler(
                 winner.Login,
                 loser.Login);
 
-            match = new Match
+            match = new Match(request.SetWonCount)
             {
                 Gamers = [winner, loser]
             };

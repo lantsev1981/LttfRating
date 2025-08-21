@@ -6,6 +6,9 @@ public class GamersConfiguration: IEntityTypeConfiguration<Gamer>
     {
         builder
             .HasKey(p => p.Login);
+
+        builder.Property(p => p.Login)
+            .HasMaxLength(32);
         
         builder
             .HasMany(g => g.Matches)
@@ -21,6 +24,7 @@ public class GamersConfiguration: IEntityTypeConfiguration<Gamer>
                 {
                     j.HasKey(gm => new { gm.Login, gm.MatchId });
                     j.ToTable("GamerMatch");
+                    j.Property(p => p.Login).HasMaxLength(32);
                 });
 
         builder

@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record SendMessageCommand(
+public record SendMessageQuery(
     long ChatId,
     string MessageText,
     string? FileName = null,
@@ -10,9 +10,9 @@ public record SendMessageCommand(
 public class SendMessageHandler(
     ITelegramBotClient botClient,
     ILogger<SendMessageHandler> logger)
-    : IRequestHandler<SendMessageCommand>
+    : IRequestHandler<SendMessageQuery>
 {
-    public async Task Handle(SendMessageCommand request, CancellationToken token)
+    public async Task Handle(SendMessageQuery request, CancellationToken token)
     {
         try
         {

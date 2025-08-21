@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record AddSetCommand(TelegramApiData Data, Guid MatchId, SetValue[] SetValues) : IRequest;
+public record AddSetCommand(TelegramInput Input, Guid MatchId, (SetScore[] SetScore, byte SetWonCount) ParseValue) : IRequest;
 
 public class AddSetHandler(
     IUnitOfWork store,
@@ -9,13 +9,13 @@ public class AddSetHandler(
 {
     public async Task Handle(AddSetCommand request, CancellationToken token)
     {
-        var winner = request.SetValues[0].Login;
-        var loser = request.SetValues[1].Login;
+        var winner = request.ParseValue.SetScore[0].Login;
+        var loser = request.ParseValue.SetScore[1].Login;
 
         logger.LogTrace("Добавляем партию: @{Winner} {WonPoint} — {LostPoint} @{Loser}",
             winner,
-            request.SetValues[0].Points,
-            request.SetValues[1].Points,
+            request.ParseValue.SetScore[0].Points,
+            request.ParseValue.SetScore[1].Points,
             loser);
 
         var match = await store.MatchStore.GetByKey(request.MatchId, token, q => q
@@ -25,11 +25,11 @@ public class AddSetHandler(
 
         var set = new Set(
             (byte)(match.Sets.Count + 1),
-            request.SetValues[0].Points,
-            request.SetValues[1].Points,
+            request.ParseValue.SetScore[0].Points,
+            request.ParseValue.SetScore[1].Points,
             winner,
-            request.Data.ChatId,
-            request.Data.MessageId);
+            request.Input.ChatId,
+            request.Input.MessageId);
 
         match.Sets.Add(set);
 

@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Gamer> Gamers { get; init; }
     public DbSet<Match> Matches { get; init; }
     public DbSet<Set> Sets { get; init; }
+    public DbSet<TelegramInput> TelegramInputs { get; init; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +31,7 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GamersConfiguration());
         modelBuilder.ApplyConfiguration(new MatchesConfiguration());
         modelBuilder.ApplyConfiguration(new SetsConfiguration());
+        modelBuilder.ApplyConfiguration(new TelegramInputsConfiguration());
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

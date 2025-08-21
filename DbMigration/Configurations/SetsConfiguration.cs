@@ -8,6 +8,10 @@ public class SetsConfiguration : IEntityTypeConfiguration<Set>
             .HasKey(p => new { p.MatchId, p.Num });
 
         builder
+            .Property(p => p.WinnerLogin)
+            .HasMaxLength(32);
+
+        builder
             .Property(p => p.ChatId)
             .HasDefaultValue(-1);
         

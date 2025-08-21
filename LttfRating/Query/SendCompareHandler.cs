@@ -1,18 +1,20 @@
 ﻿namespace LttfRating;
 
-public record SendCompareMessageCommand(TelegramApiData Data) : IRequest;
+public record SendCompareQuery(TelegramInput Input) : IRequest;
 
-public class SendCompareMessageHandler(
+public class SendCompareHandler(
     IUnitOfWork store,
     IMediator mediator)
-    : IRequestHandler<SendCompareMessageCommand>
+    : IRequestHandler<SendCompareQuery>
 {
-    public async Task Handle(SendCompareMessageCommand request, CancellationToken token)
+    public async Task Handle(SendCompareQuery request, CancellationToken token)
     {
-        var text = request.Data.Text.Split(' ');
+        var match = UpdateExtensions.CompareRatingRegex.Match(request.Input.Text);
+        if (!match.Success)
+            throw new ValidationException("Неудалось разобрать сообщение");
         
-        string gamerLogin1 = text[1].TrimStart('@');
-        string gamerLogin2 = text[2].TrimStart('@');
+        var gamerLogin1 = match.Groups["User1"].Value.Trim('@').Trim();
+        var gamerLogin2 = match.Groups["User2"].Value.Trim('@').Trim();
         
         if (gamerLogin1 == gamerLogin2)
             return;
@@ -35,7 +37,7 @@ public class SendCompareMessageHandler(
 
         if (commonMatches.Length == 0)
         {
-            await mediator.Send(new SendMessageCommand(request.Data.ChatId,
+            await mediator.Send(new SendMessageQuery(request.Input.ChatId,
                 $"""
                  <b>{gamer1.Login} 🆚 {gamer2.Login}</b>
                  <i>Нет завершённых матчей</i>
@@ -44,7 +46,7 @@ public class SendCompareMessageHandler(
             return;
         }
 
-        await mediator.Send(new SendMessageCommand(request.Data.ChatId,
+        await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
              {GetHeadToHeadStats(gamer1, gamer2, commonMatches)}
 

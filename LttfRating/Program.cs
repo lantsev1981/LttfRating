@@ -1,81 +1,68 @@
-﻿using Serilog;
-
-namespace LttfRating;
+﻿namespace LttfRating;
 
 class Program
 {
-    static async Task Main()
+    static async Task Main(string[] args)
     {
         var envName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
         Console.WriteLine($"ASPNETCORE_ENVIRONMENT={envName}");
         Console.WriteLine($"Environment.UserName={Environment.UserName}");
+        
+        var host = Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((hostContext, config) =>
+            {
+                var env = hostContext.HostingEnvironment;
+                config
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile(Path.Combine("config", "appsettings.json"), optional: false, reloadOnChange: true)
+                    .AddJsonFile(Path.Combine("config", $"appsettings.{envName}.json"), optional: true, reloadOnChange: true)
+                    .AddJsonFile(Path.Combine("config", $"appsettings.{Environment.UserName}.json"), optional: true, reloadOnChange: true)
+                    .AddEnvironmentVariables();
+            })
+            .ConfigureServices((hostContext, services) =>
+            {
+                // Доступ к конфигурации
+                var configuration = hostContext.Configuration;
 
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())      
-            .AddJsonFile(Path.Combine("config", "appsettings.json"), optional: false, reloadOnChange: true)
-            .AddJsonFile(Path.Combine("config", $"appsettings.{envName}.json"), optional: true, reloadOnChange: true)
-            .AddJsonFile(Path.Combine("config", $"appsettings.{Environment.UserName}.json"), optional: true, reloadOnChange: true)
-            .AddEnvironmentVariables()
+                services
+                    .Configure<ApiConfig>(configuration.GetSection("ApiConfig"))
+                    .AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true))
+                    .AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly))
+                    .Decorate(typeof(IRequestHandler<>), typeof(RequestHandlerLogger<>))
+                    .Decorate(typeof(IRequestHandler<,>), typeof(RequestHandlerLogger<,>))
+                    // .Decorate(typeof(INotificationHandler<>), typeof(NotificationHandlerLogger<>))
+                    .AddSingleton<ITelegramBotClient>(_ => new TelegramBotClient(configuration["BotToken"]
+                        ?? throw new InvalidOperationException("BotToken is missing")))
+                    .AddSingleton<UpdateHandler>()
+                    .AddSingleton<ErrorHandler>()
+                    .AddTransient<IGamerStore, GamerStore>()
+                    .AddTransient<IDomainStore<Gamer>, GamerStore>()
+                    .AddTransient<IDomainStore<Match>, MatchStore>()
+                    .AddTransient<IDomainStore<Set>, SetStore>()
+                    .AddTransient<IDomainStore<TelegramInput>, TelegramInputStore>()
+                    .AddTransient<IUnitOfWork, UnitOfWork>()
+                    .AddDbContext<AppDbContext>(options =>
+                        options.UseNpgsql(
+                            configuration.GetConnectionString("AppUserConnectionString"),
+                            npgsqlOptions =>
+                            {
+                                npgsqlOptions.EnableRetryOnFailure(); // повтор при временных ошибках
+                                npgsqlOptions.CommandTimeout(30); // таймаут команд
+                            }
+                        ))
+                    .AddHostedService<TelegramInputBackgroundService>()
+                    .AddHostedService<BotService>();
+            })
+            .UseSerilog((hostContext, loggerConfiguration) =>
+            {
+                loggerConfiguration
+                    .ReadFrom.Configuration(hostContext.Configuration)
+                    .Enrich.FromLogContext()
+                    .Enrich.WithProperty("Application", "LttfRating")
+                    .Enrich.WithProperty("Environment", hostContext.HostingEnvironment.EnvironmentName);
+            })
             .Build();
-        
-        Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(configuration)
-            .Enrich.FromLogContext()
-            .Enrich.WithProperty("Application", "LttfRating")
-            .Enrich.WithProperty("Environment", envName)
-            .CreateLogger();
-        
-        var services = new ServiceCollection();
-        
-        services
-            .Configure<ApiConfig>(configuration.GetSection("ApiConfig"))
-            .AddLogging(loggingBuilder => 
-                loggingBuilder.AddSerilog(dispose: true))
-            .AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly))
-            .Decorate(typeof(IRequestHandler<>), typeof(RequestHandlerLogger<>))
-            .Decorate(typeof(IRequestHandler<,>), typeof(RequestHandlerLogger<,>))
-            // .Decorate(typeof(INotificationHandler<>), typeof(NotificationHandlerLogger<>))
-            .AddSingleton<ITelegramBotClient>(_ => new TelegramBotClient(configuration["BotToken"]
-                ?? throw new InvalidOperationException("BotToken is missing")))
-            .AddSingleton<UpdateMessageHandler>()
-            .AddSingleton<ErrorMessageHandler>()
-            .AddSingleton<IBotService, BotService>()
-            .AddTransient<IGamerStore, GamerStore>()
-            .AddTransient<IDomainStore<Gamer>, GamerStore>()
-            .AddTransient<IDomainStore<Match>, MatchStore>()
-            .AddTransient<IDomainStore<Set>, SetStore>()
-            .AddTransient<IUnitOfWork, UnitOfWork>()
-            .AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(
-                    configuration.GetConnectionString("AppUserConnectionString"),
-                    npgsqlOptions =>
-                    {
-                        npgsqlOptions.EnableRetryOnFailure(); // опционально: повтор при временных ошибках
-                        npgsqlOptions.CommandTimeout(30); // таймаут команд
-                    }
-                ));
 
-        var serviceProvider = services.BuildServiceProvider();
-
-        using var cts = new CancellationTokenSource();
-        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-        
-        try
-        {
-            var botService = serviceProvider.GetRequiredService<IBotService>();
-            await botService.StartAsync(cts.Token);
-
-            logger.LogTrace("Нажмите Ctrl+C для остановки.");
-            await Task.Delay(Timeout.Infinite, cts.Token);
-        }
-        catch (Exception ex)
-        {
-            logger.LogCritical(ex, ex.Message);
-        }
-        finally
-        {
-            if (serviceProvider is IDisposable disposable)
-                disposable.Dispose();
-        }
+        await host.RunAsync();
     }
 }

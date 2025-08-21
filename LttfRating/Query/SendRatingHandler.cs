@@ -1,16 +1,19 @@
 ﻿namespace LttfRating;
 
-public record SendRatingMessageCommand(TelegramApiData Data) : IRequest;
+public record SendRatingQuery(TelegramInput Input) : IRequest;
 
-public class SendRatingMessageHandler(
+public class SendRatingHandler(
     IUnitOfWork store,
     IMediator mediator)
-    : IRequestHandler<SendRatingMessageCommand>
+    : IRequestHandler<SendRatingQuery>
 {
-    public async Task Handle(SendRatingMessageCommand request, CancellationToken token)
+    public async Task Handle(SendRatingQuery request, CancellationToken token)
     {
-        var text = request.Data.Text.Split(' ');
-        string viewLogin = text.Length == 1 ? request.Data.User.Login : text[1].TrimStart('@');
+        var match = UpdateExtensions.GetRatingRegex.Match(request.Input.Text);
+        if (!match.Success)
+            throw new ValidationException("Неудалось разобрать сообщение");
+        
+        var viewLogin = match.Groups["User1"].Success ? match.Groups["User"].Value.Trim('@').Trim() : request.Input.Sender.Login;
         
         var allGamers = (await store.GameStore.GetItems(token))
             .Where(p => p.Rating != 1) // исключаем "нейтральных"
@@ -25,7 +28,7 @@ public class SendRatingMessageHandler(
 
         if (gamer == null)
         {
-            await mediator.Send(new SendMessageCommand(request.Data.ChatId,
+            await mediator.Send(new SendMessageQuery(request.Input.ChatId,
                 $"@{viewLogin} - пока нет в рейтинге."), token);
             return;
         }
@@ -43,7 +46,7 @@ public class SendRatingMessageHandler(
             int diff = (int)((higher.Rating - gamer.Rating) * 100);
             var higherPlace = place - 1;
             above = $"{higherPlace.ToEmojiPosition()} @{higher.Login} • 🌟 Рейтинг: {higher.Rating * 100:F0} <code>({(diff >= 0 ? "+" : "")}{diff}*)</code>";
-            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"🌟 @{higher.Login}", $"/rating {higher.Login}"));
+            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"🌟 {higher.Login}", $"/rating @{higher.Login}"));
         }
 
         if (place < allGamers.Length)
@@ -52,7 +55,7 @@ public class SendRatingMessageHandler(
             int diff = (int)((lower.Rating - gamer.Rating) * 100);
             var lowerPlace = place + 1;
             below = $"{lowerPlace.ToEmojiPosition()} @{lower.Login} • 🌟 Рейтинг: {lower.Rating * 100:F0} <code>({diff}*)</code>";
-            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"🌟 @{lower.Login}", $"/rating {lower.Login}"));
+            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"🌟 {lower.Login}", $"/rating @{lower.Login}"));
         }
 
         // Группировка матчей по противникам
@@ -110,7 +113,7 @@ public class SendRatingMessageHandler(
             return $"{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}: <b> {s.Wins} — {s.Losses} </b> <code>({(s.PointsWon - s.PointsLost >= 0 ? "+" : "")}{s.PointsWon - s.PointsLost}●)</code>";
         }));
 
-        await mediator.Send(new SendMessageCommand(request.Data.ChatId,
+        await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
              В общем зачёте:
              {above ?? ""}

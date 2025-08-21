@@ -1,8 +1,8 @@
 ﻿namespace LttfRating;
 
-public class ErrorMessageHandler(
+public class ErrorHandler(
     IServiceProvider serviceProvider,
-    ILogger<ErrorMessageHandler> logger)
+    ILogger<ErrorHandler> logger)
 {
     public async Task HandleAsync(ITelegramBotClient botClient, Exception error, CancellationToken token)
     {
@@ -24,7 +24,7 @@ public class ErrorMessageHandler(
         if (admin?.UserId is null)
             return;
 
-        await mediator.Send(new SendMessageCommand(admin.UserId.Value,
+        await mediator.Send(new SendMessageQuery(admin.UserId.Value,
             $"""
              ‼️ <b>КРИТИЧЕСКАЯ ОШИБКА</b> ‼️
              ━━━━━━━━━━━━━━━━━━━

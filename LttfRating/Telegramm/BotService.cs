@@ -1,44 +1,54 @@
 ﻿namespace LttfRating;
 
-internal interface IBotService
-{
-    Task StartAsync(CancellationToken token);
-}
-
 public class BotService(
     ITelegramBotClient botClient,
-    UpdateMessageHandler updateHandler,
-    ErrorMessageHandler errorHandler,
+    UpdateHandler updateHandler,
+    ErrorHandler errorHandler,
     ILogger<BotService> logger)
-    : IBotService
+    : BackgroundService
 {
-    public async Task StartAsync(CancellationToken token)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var me = await botClient.GetMe(token);
-        logger.LogTrace("{FirstName} запущен!", me.FirstName);
-        
-        await botClient.SetMyCommands(
-            new BotCommand[]
-            {
-                new() { Command = "start", Description = "Запуск бота, список команд и помощь" },
-                new() { Command = "rating", Description = "Посмотреть свой рейтинг" }
-            },
-            new BotCommandScopeDefault(),
-            cancellationToken: token
-        );
-
-        var receiverOptions = new ReceiverOptions
+        try
         {
-            AllowedUpdates = [UpdateType.Message, UpdateType.MessageReaction, UpdateType.CallbackQuery],
-            DropPendingUpdates = false,
-        };
+            var me = await botClient.GetMe(stoppingToken);
 
-        botClient.StartReceiving(
-            updateHandler: updateHandler.HandleAsync,
-            errorHandler: errorHandler.HandleAsync,
-            receiverOptions: receiverOptions,
-            cancellationToken: token);
+            // Устанавливаем команды
+            await botClient.SetMyCommands(
+                new[]
+                {
+                    new BotCommand { Command = "start", Description = "Запуск бота, список команд и помощь" },
+                    new BotCommand { Command = "rating", Description = "Посмотреть свой рейтинг" }
+                },
+                new BotCommandScopeDefault(),
+                cancellationToken: stoppingToken);
 
-        logger.LogTrace("Бот начал принимать обновления.");
+            var receiverOptions = new ReceiverOptions
+            {
+                AllowedUpdates = new[] { UpdateType.Message, UpdateType.MessageReaction, UpdateType.CallbackQuery },
+                DropPendingUpdates = false,
+            };
+
+            // Запускаем приём обновлений
+            botClient.StartReceiving(
+                updateHandler: updateHandler.HandleAsync,
+                errorHandler: errorHandler.HandleAsync,
+                receiverOptions: receiverOptions,
+                cancellationToken: stoppingToken);
+
+            logger.LogTrace("{FirstName} запущен!", me.FirstName);
+
+            while (!stoppingToken.IsCancellationRequested)
+                await Task.Delay(1000, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Корректная остановка
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Критическая ошибка при запуске бота.");
+            throw;
+        }
     }
 }

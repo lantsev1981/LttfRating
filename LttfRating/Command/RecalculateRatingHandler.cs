@@ -1,17 +1,17 @@
 ﻿namespace LttfRating;
 
-public record RecalculateRatingMessageCommand(TelegramApiData Data) : IRequest;
+public record RecalculateRatingCommand(TelegramInput Input) : IRequest;
 
-public class RecalculateRatingMessageHandler(
+public class RecalculateRatingHandler(
     IUnitOfWork store,
     IMediator mediator,
-    ILogger<RecalculateRatingMessageHandler> logger)
-    : IRequestHandler<RecalculateRatingMessageCommand>
+    ILogger<RecalculateRatingHandler> logger)
+    : IRequestHandler<RecalculateRatingCommand>
 {
-    public async Task Handle(RecalculateRatingMessageCommand request, CancellationToken token)
+    public async Task Handle(RecalculateRatingCommand request, CancellationToken token)
     {
         var admin = await store.GameStore.GetAdminGamerId(token);
-        if (admin?.Login != request.Data.User.Login)
+        if (admin?.Login != request.Input.Sender.Login)
             return;
 
         var gamers =await store.GameStore.GetItems(token);
@@ -46,7 +46,7 @@ public class RecalculateRatingMessageHandler(
 
         await store.MatchStore.Update(null!, token);
 
-        await mediator.Send(new SendMessageCommand(admin.UserId!.Value,
+        await mediator.Send(new SendMessageQuery(admin.UserId!.Value,
             $"""
              ⚠️ <b>Рейтиг пересчитан</b>
              """), token);
