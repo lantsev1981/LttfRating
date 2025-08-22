@@ -6,6 +6,7 @@ public static class UpdateExtensions
         => update.Type switch
         {
             UpdateType.Message => new TelegramInput(
+                update.Type.ToString(),
                 update.Message!.Chat.Id,
                 update.Message.MessageId,
                 update.Message.Text ?? string.Empty)
@@ -14,6 +15,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.MessageReaction => new TelegramInput(
+                update.Type.ToString(),
                 update.MessageReaction!.Chat.Id,
                 update.MessageReaction.MessageId,
                 update.MessageReaction!.NewReaction.GetEmoji())
@@ -22,6 +24,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.CallbackQuery => new TelegramInput(
+                update.Type.ToString(),
                 update.CallbackQuery!.Message!.Chat.Id,
                 update.CallbackQuery.Message.MessageId,
                 update.CallbackQuery.Data!)
@@ -30,6 +33,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.EditedMessage => new TelegramInput(
+                update.Type.ToString(),
                 update.EditedMessage!.Chat.Id,
                 update.EditedMessage.MessageId,
                 update.EditedMessage.Text ?? string.Empty)
@@ -38,6 +42,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.InlineQuery => new TelegramInput(
+                update.Type.ToString(),
                 -1, // нет ChatId для InlineQuery
                 -1, // нет MessageId
                 update.InlineQuery!.Query)
@@ -46,6 +51,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.ChosenInlineResult => new TelegramInput(
+                update.Type.ToString(),
                 -1, // нет ChatId
                 -1, // нет MessageId
                 update.ChosenInlineResult!.ResultId)
@@ -54,6 +60,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.ShippingQuery => new TelegramInput(
+                update.Type.ToString(),
                 -1, // нет ChatId
                 -1, // нет MessageId
                 update.ShippingQuery!.InvoicePayload)
@@ -62,6 +69,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.PreCheckoutQuery => new TelegramInput(
+                update.Type.ToString(),
                 -1, // нет ChatId
                 -1, // нет MessageId
                 update.PreCheckoutQuery!.InvoicePayload)
@@ -70,6 +78,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.PollAnswer => new TelegramInput(
+                update.Type.ToString(),
                 -1, // нет ChatId
                 -1, // нет MessageId
                 string.Join(",", update.PollAnswer!.OptionIds))
@@ -78,6 +87,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.BusinessMessage => new TelegramInput(
+                update.Type.ToString(),
                 update.BusinessMessage!.Chat.Id,
                 update.BusinessMessage.MessageId,
                 update.BusinessMessage.Text ?? string.Empty)
@@ -86,6 +96,7 @@ public static class UpdateExtensions
             },
 
             UpdateType.EditedBusinessMessage => new TelegramInput(
+                update.Type.ToString(),
                 update.EditedBusinessMessage!.Chat.Id,
                 update.EditedBusinessMessage.MessageId,
                 update.EditedBusinessMessage.Text ?? string.Empty)
@@ -172,29 +183,29 @@ public static class UpdateExtensions
         @"(\s+(?<Length>25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))?\s*$",
         RegexOptions.Compiled);
 
-    public static CommandType GetCommandType(this string message)
+    public static CommandType GetCommandType(this TelegramInput value)
     {
-        message = message.Trim(); // Убираем лишние пробелы
+        var input = value.Text.Trim(); // Убираем лишние пробелы
 
-        if (string.IsNullOrWhiteSpace(message))
+        if (string.IsNullOrWhiteSpace(input))
             return CommandType.Unknown;
 
-        if (StartRegex.IsMatch(message))
+        if (StartRegex.IsMatch(input))
             return CommandType.Start;
 
-        if (GetRatingRegex.IsMatch(message))
+        if (GetRatingRegex.IsMatch(input))
             return CommandType.GetRating;
 
-        if (CompareRatingRegex.IsMatch(message))
+        if (CompareRatingRegex.IsMatch(input))
             return CommandType.CompareRating;
 
-        if (RecalculateRatingRegex.IsMatch(message))
+        if (RecalculateRatingRegex.IsMatch(input))
             return CommandType.RecalculateRating;
 
-        if (SetScoreRegex.IsMatch(message))
+        if (SetScoreRegex.IsMatch(input))
             return CommandType.SetScore;
 
-        if (message.TrimEnd().EndsWith("👎"))
+        if (value.UpdateType == UpdateType.MessageReaction.ToString() && input.TrimEnd().EndsWith("👎"))
             return CommandType.DeleteSet;
 
         return CommandType.Unknown;

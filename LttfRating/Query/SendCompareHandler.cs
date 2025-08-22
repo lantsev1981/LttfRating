@@ -17,21 +17,20 @@ public class SendCompareHandler(
         var gamerLogin2 = match.Groups["User2"].Value.Trim('@').Trim();
         
         if (gamerLogin1 == gamerLogin2)
-            return;
-            
+            throw new ValidationException("Необходимо указать разных игроков");
+
         var gamer1 = await store.GameStore.GetByKey(gamerLogin1, token, q => q
-            .Include(p => p.Matches)
-            .ThenInclude(p => p.Gamers)
-            .Include(p => p.Matches)
-            .ThenInclude(p => p.Sets));
+                         .Include(p => p.Matches)
+                         .ThenInclude(p => p.Gamers)
+                         .Include(p => p.Matches)
+                         .ThenInclude(p => p.Sets))
+                     ?? throw new ValidationException($"@{gamerLogin1} - пока нет в рейтинге");
         var gamer2 = await store.GameStore.GetByKey(gamerLogin2, token, q => q
-            .Include(p => p.Matches)
-            .ThenInclude(p => p.Gamers)
-            .Include(p => p.Matches)
-            .ThenInclude(p => p.Sets));
-        
-        if (gamer1 is null || gamer2 is null)
-            return;
+                         .Include(p => p.Matches)
+                         .ThenInclude(p => p.Gamers)
+                         .Include(p => p.Matches)
+                         .ThenInclude(p => p.Sets))
+                     ?? throw new ValidationException($"@{gamerLogin2} - пока нет в рейтинге");
 
         var commonMatches = GetCommonMatches(gamer1, gamer2);
 

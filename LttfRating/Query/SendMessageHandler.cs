@@ -3,6 +3,7 @@
 public record SendMessageQuery(
     long ChatId,
     string MessageText,
+    int? MessageId = null,
     string? FileName = null,
     InlineKeyboardMarkup? Buttons = null)
     : IRequest;
@@ -16,16 +17,7 @@ public class SendMessageHandler(
     {
         try
         {
-            if (request.FileName == null)
-            {
-                await botClient.SendMessage(
-                    chatId: request.ChatId,
-                    parseMode: ParseMode.Html,
-                    text: request.MessageText,
-                    replyMarkup: request.Buttons,
-                    cancellationToken: token);
-            }
-            else
+            if (request.FileName != null)
             {
                 await using var stream = File.OpenRead(request.FileName);
                 await botClient.SendPhoto(
@@ -35,7 +27,27 @@ public class SendMessageHandler(
                     caption: request.MessageText,
                     replyMarkup: request.Buttons,
                     cancellationToken: token);
+
+                return;
             }
+
+            if (request.MessageId.HasValue && request.MessageText.IsEmoji())
+            {
+                await botClient.SetMessageReaction(
+                    chatId: request.ChatId,
+                    messageId: request.MessageId!.Value,
+                    reaction: new[] { new ReactionTypeEmoji { Emoji = request.MessageText } },
+                    cancellationToken: token);
+
+                return;
+            }
+
+            await botClient.SendMessage(
+                chatId: request.ChatId,
+                parseMode: ParseMode.Html,
+                text: request.MessageText,
+                replyMarkup: request.Buttons,
+                cancellationToken: token);
         }
         catch (Exception e)
         {

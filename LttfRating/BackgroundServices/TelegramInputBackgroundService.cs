@@ -82,7 +82,7 @@ public class TelegramInputBackgroundService(
             }
         }
 
-        var commandType = input.Text.GetCommandType();
+        var commandType = input.GetCommandType();
         switch (commandType)
         {
             case CommandType.Start:
@@ -95,6 +95,7 @@ public class TelegramInputBackgroundService(
                     • Отправляйте результаты матча в формате:
                       <code>@соперник 9 11</code>
                       ☝️ тегни соперника и проставь результат партии, где 9 это твои очки, а 11 соперника
+                      ☝️ в конце запроса можно добавить требуемое количество побед в матче (по умолчанию до 3 побед)
                     • Я автоматически учту результат и обновлю рейтинг
                     • Поставь 👎 на сообщении типа <code>@соперник 9 11</code> если не согласен с результатами или они введены ошибочно
                       ☝️ удалить результаты можно только в течении часа после их публикации
@@ -105,7 +106,7 @@ public class TelegramInputBackgroundService(
                     Если есть вопросы — пишите <a href="https://t.me/lantsev1981">создатею</a>
                     Если хочешь поучаствовать в разработке или просто позырить <a href="https://github.com/lantsev1981/LttfRating">код</a>
                     Если хочешь поблагодарить <a href="https://www.tbank.ru/cf/1k4w2TmaoyE">кликай</a> или сканируй QR-code
-                    """, "LttfRatingBotQr.jpg"), token);
+                    """, FileName: "LttfRatingBotQr.jpg"), token);
                 break;
             case CommandType.GetRating:
                 await mediator.Send(new SendRatingQuery(input), token);
@@ -132,9 +133,7 @@ public class TelegramInputBackgroundService(
 
         await mediator.Send(new SendMessageQuery(chatId,
             $"""
-             ⚠️ <b>Ошибка ввода результата</b>
-
-             @{username}, {errorMessage}.
+             ⚠️ @{username}, {errorMessage}.
 
              Если это ошибка — обратитесь к администратору:
              {adminLinks}

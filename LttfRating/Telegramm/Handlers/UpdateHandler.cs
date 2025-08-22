@@ -34,18 +34,22 @@ public class UpdateHandler(
 
                      Если это ошибка — обратитесь к администратору:
                      {adminLinks}
-                     """, "LoginSettings.jpg"), token);
+                     """, FileName: "LoginSettings.jpg"), token);
 
                 return;
             }
             
             // Сохраняем запрос если он соответствует одному из паттернов
             // обработка запросов будет осуществляться в TelegramInputBackgroundService
-            if (input.Text.GetCommandType() != CommandType.Unknown)
+            if (input.GetCommandType() != CommandType.Unknown)
             {
                 logger.LogTrace("Пришло сообщение: {Text} от @{Username}",
                     input.Text, input.Sender.Login);
+                
                 await store.TelegramInputStore.AddAsync(input, token);
+                
+                await mediator.Send(new SendMessageQuery(input.Sender.Id,
+                    "🫡", MessageId: input.MessageId), token);
             }
         }
         catch (Exception ex)

@@ -13,7 +13,7 @@ public class SendRatingHandler(
         if (!match.Success)
             throw new ValidationException("Неудалось разобрать сообщение");
         
-        var viewLogin = match.Groups["User1"].Success ? match.Groups["User"].Value.Trim('@').Trim() : request.Input.Sender.Login;
+        var viewLogin = match.Groups["User"].Success ? match.Groups["User"].Value.Trim('@').Trim() : request.Input.Sender.Login;
         
         var allGamers = (await store.GameStore.GetItems(token))
             .Where(p => p.Rating != 1) // исключаем "нейтральных"
@@ -24,14 +24,8 @@ public class SendRatingHandler(
                 .Include(p => p.Matches)
                 .ThenInclude(p => p.Gamers)
                 .Include(p => p.Matches)
-                .ThenInclude(p => p.Sets));
-
-        if (gamer == null)
-        {
-            await mediator.Send(new SendMessageQuery(request.Input.ChatId,
-                $"@{viewLogin} - пока нет в рейтинге."), token);
-            return;
-        }
+                .ThenInclude(p => p.Sets))
+            ?? throw new ValidationException($"@{viewLogin} - пока нет в рейтинге");
 
         // Место в рейтинге
         int place = Array.IndexOf(allGamers, gamer) + 1;

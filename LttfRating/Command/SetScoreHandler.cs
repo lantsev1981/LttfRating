@@ -60,7 +60,7 @@ public class SetScoreHandler(
         var loser = setValue[1];
 
         if (winner.Login == loser.Login)
-            throw new ValidationException("Указан одинаковый логин для обоих игроков");
+            throw new ValidationException("Необходимо указать разных игроков");
 
         if (winner.Points < 11)
             throw new ValidationException("Результат победителя должен быть не менее 11 очков");

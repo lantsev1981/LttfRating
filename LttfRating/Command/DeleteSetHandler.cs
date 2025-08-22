@@ -27,22 +27,7 @@ public class DeleteSetHandler(
         {
             // игрок может отменить игру только в течении часа
             if (!isAdmin && DateTimeOffset.UtcNow - set.Date > TimeSpan.FromHours(1))
-            {
-                var adminLinks = string.Join(", ", _config.Administrators.Select(admin =>
-                    $"<a href=\"tg://user?id={admin}\">@{admin}</a>"));
-                
-                await mediator.Send(new SendMessageQuery(request.Input.Sender.Id,
-                    $"""
-                     ⚠️ <b>Вы не можете отменить партию</b>
-
-                     @{sender}, отменить партию можно только в течении часа.
-
-                     Если это ошибка — обратитесь к администратору:
-                     {adminLinks}
-                     """), token);
-
-                return;
-            }
+                throw new ValidationException("Отменить партию можно только в течении часа");
 
             var winner = set.Match.LastWinner;
             var loser = set.Match.LastLoser;
