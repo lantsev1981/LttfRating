@@ -1,6 +1,11 @@
 ﻿FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
 WORKDIR /app
 
+# Установка шрифтов
+RUN apt-get update && \
+    apt-get install -y fontconfig fonts-dejavu fonts-liberation && \
+    fc-cache -f -v
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
