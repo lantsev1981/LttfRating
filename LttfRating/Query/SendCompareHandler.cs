@@ -9,30 +9,26 @@ public class SendCompareHandler(
 {
     public async Task Handle(SendCompareQuery request, CancellationToken token)
     {
-        var match = UpdateExtensions.CompareRatingRegex.Match(request.Input.Text);
-        if (!match.Success)
+        var regexMatch = UpdateExtensions.CompareRatingRegex.Match(request.Input.Text);
+        if (!regexMatch.Success)
             throw new ValidationException("Неудалось разобрать сообщение");
         
-        var gamerLogin1 = match.Groups["User1"].Value.Trim('@').Trim();
-        var gamerLogin2 = match.Groups["User2"].Value.Trim('@').Trim();
+        var gamerLogin1 = regexMatch.Groups["User1"].Value.Trim('@').Trim();
+        var gamerLogin2 = regexMatch.Groups["User2"].Value.Trim('@').Trim();
         
         if (gamerLogin1 == gamerLogin2)
             throw new ValidationException("Необходимо указать разных игроков");
 
-        var gamer1 = await store.GameStore.GetByKey(gamerLogin1, token, q => q
-                         .Include(p => p.Matches)
-                         .ThenInclude(p => p.Gamers)
-                         .Include(p => p.Matches)
-                         .ThenInclude(p => p.Sets))
+        var gamer1 = await store.GameStore.GetByKey(gamerLogin1, token)
                      ?? throw new ValidationException($"@{gamerLogin1} - пока нет в рейтинге");
-        var gamer2 = await store.GameStore.GetByKey(gamerLogin2, token, q => q
-                         .Include(p => p.Matches)
-                         .ThenInclude(p => p.Gamers)
-                         .Include(p => p.Matches)
-                         .ThenInclude(p => p.Sets))
+        var gamer2 = await store.GameStore.GetByKey(gamerLogin2, token)
                      ?? throw new ValidationException($"@{gamerLogin2} - пока нет в рейтинге");
 
-        var commonMatches = GetCommonMatches(gamer1, gamer2);
+        var commonMatches = (await store.MatchStore.GetItems(token, m => m
+            .Include(p => p.Gamers)
+            .Include(p => p.Sets)
+            .Where(p => p.Gamers.Contains(gamer1) && p.Gamers.Contains(gamer2))))
+            .ToArray();
 
         if (commonMatches.Length == 0)
         {
@@ -114,13 +110,5 @@ public class SendCompareHandler(
                 <b>Все матчи:</b>
                 {byMatchString}
                 """;
-    }
-
-    private Match[] GetCommonMatches(Gamer gamer1, Gamer gamer2)
-    {
-        return gamer1.Matches
-            .Where(m => !m.IsPending && m.Gamers.Contains(gamer2))
-            .OrderByDate()
-            .ToArray();
     }
 }
