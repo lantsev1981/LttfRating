@@ -26,8 +26,8 @@ public class SetScoreHandler(
 
         var matchId = await mediator.Send(new GetOrAddMatchCommand(
             parseValue.SetScore[0].Login, parseValue.SetScore[1].Login, parseValue.SetWonCount), token);
-        await mediator.Send(new AddSetCommand(request.Input, matchId, parseValue), token);
-        await mediator.Send(new SendResultQuery(request.Input.ChatId, matchId), token);
+        var oldRating = await mediator.Send(new AddSetCommand(request.Input, matchId, parseValue), token);
+        await mediator.Send(new SendResultQuery(request.Input.ChatId, matchId, oldRating), token);
     }
 
     private (SetScore[] SetScore, byte SetWonCount) ParseMatch(string text, string senderLogin)
@@ -44,12 +44,12 @@ public class SetScoreHandler(
                     match.Groups["User2"].Value.Trim('@').Trim(),
                     byte.Parse(match.Groups["Points2"].Value))
             ];
-            
+
             return (result
                 .OrderByDescending(p => p.Points)
-                .ToArray(),match.Groups["Length"].Success ? byte.Parse(match.Groups["Length"].Value) : (byte)3);
+                .ToArray(), match.Groups["Length"].Success ? byte.Parse(match.Groups["Length"].Value) : (byte)3);
         }
-        
+
         throw new ValidationException("Неудалось разобрать сообщение");
     }
 

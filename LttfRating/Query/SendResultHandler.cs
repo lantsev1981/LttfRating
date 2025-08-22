@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record SendResultQuery(long ChatId, Guid MatchId) : IRequest;
+public record SendResultQuery(long ChatId, Guid MatchId, OldRating OldRating) : IRequest;
 
 public class SendResultHandler(
     IUnitOfWork store,
@@ -20,11 +20,11 @@ public class SendResultHandler(
 
         await mediator.Send(new SendMessageQuery(request.ChatId,
             $"""
-              <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
+             <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
 
-              <b>@{winner.Login} {lastSet.WonPoint:00} 🆚 {lastSet.LostPoint:00} @{loser.Login}</b>
-              📋 По партиям:  {match.WinnerSetCount} — {match.LoserSetCount}
-              """), token);
+             <b>@{winner.Login} {lastSet.WonPoint:00} 🆚 {lastSet.LostPoint:00} @{loser.Login}</b>
+             📋 По партиям:  {match.WinnerSetCount} — {match.LoserSetCount}
+             """), token);
 
         if (!match.IsPending)
         {
@@ -32,8 +32,8 @@ public class SendResultHandler(
             var winnerPoints = match.Sets.Sum(p => p.GetPoints(winner.Login));
             var loserPoints = points - winnerPoints;
             var subPoints = winnerPoints - loserPoints;
-            var winnerSubRating = winner.Rating - winner.OldRating;
-            var loserSubRating = loser.Rating - loser.OldRating;
+            var winnerSubRating = winner.Rating - request.OldRating.Winner;
+            var loserSubRating = loser.Rating - request.OldRating.Loser;
             await mediator.Send(new SendMessageQuery(request.ChatId,
                 $"""
                  <i>Матч завершён</i>

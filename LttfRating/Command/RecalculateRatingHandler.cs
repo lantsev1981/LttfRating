@@ -14,21 +14,21 @@ public class RecalculateRatingHandler(
         if (admin?.Login != request.Input.Sender.Login)
             return;
 
-        var gamers =await store.GameStore.GetItems(token);
+        var gamers = await store.GameStore.GetItems(token);
         foreach (var gamer in gamers)
             gamer.Rating = 1;
 
         var matches = await store.MatchStore.GetItems(token, q => q
             .Include(p => p.Gamers)
             .Include(p => p.Sets));
-        
+
         foreach (var match in matches)
         {
-            match.CalculateRating();
+            var oldRating = match.CalculateRating();
 
             var winner = match.LastWinner;
             var loser = match.LastLoser;
-            
+
             logger.LogTrace(
                 """
                 Пересчитываем матч: {Date}, партии {@Set}
@@ -41,8 +41,8 @@ public class RecalculateRatingHandler(
                 $"{match.Sets.Sum(p => p.GetPoints(loser.Login))} {loser.Login}",
                 (string[])
                 [
-                    $"{winner.Rating * 100:F0} ({(winner.Rating - winner.OldRating) * 100:F0})",
-                    $"{loser.Rating * 100:F0} ({(loser.Rating - loser.OldRating) * 100:F0})"
+                    $"{winner.Rating * 100:F0} ({(winner.Rating - oldRating.Winner) * 100:F0})",
+                    $"{loser.Rating * 100:F0} ({(loser.Rating - oldRating.Loser) * 100:F0})"
                 ]);
         }
 
