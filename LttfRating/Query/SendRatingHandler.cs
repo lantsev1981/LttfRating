@@ -9,11 +9,11 @@ public class SendRatingHandler(
 {
     public async Task Handle(SendRatingQuery request, CancellationToken token)
     {
-        var match = UpdateExtensions.GetRatingRegex.Match(request.Input.Text);
-        if (!match.Success)
+        var regexMatch = UpdateExtensions.GetRatingRegex.Match(request.Input.Text);
+        if (!regexMatch.Success)
             throw new ValidationException("Неудалось разобрать сообщение");
         
-        var viewLogin = match.Groups["User"].Success ? match.Groups["User"].Value.Trim('@').Trim() : request.Input.Sender.Login;
+        var viewLogin = regexMatch.Groups["User"].Success ? regexMatch.Groups["User"].Value.Trim('@').Trim() : request.Input.Sender.Login;
 
         var allGamers = await store.GameStore.GetItems(token, g => g
             .Where(p => p.Rating != 1)); // исключаем "нейтральных"

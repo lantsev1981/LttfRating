@@ -27,27 +27,27 @@ public class SetScoreHandler(
         var matchId = await mediator.Send(new GetOrAddMatchCommand(
             parseValue.SetScore[0].Login, parseValue.SetScore[1].Login, parseValue.SetWonCount), token);
         var oldRating = await mediator.Send(new AddSetCommand(request.Input, matchId, parseValue), token);
-        await mediator.Send(new SendResultQuery(request.Input.ChatId, matchId, oldRating), token);
+        await mediator.Send(new SendResultQuery(request.Input, matchId, oldRating), token);
     }
 
     private (SetScore[] SetScore, byte SetWonCount) ParseMatch(string text, string senderLogin)
     {
-        var match = UpdateExtensions.SetScoreRegex.Match(text);
-        if (match.Success)
+        var regexMatch = UpdateExtensions.SetScoreRegex.Match(text);
+        if (regexMatch.Success)
         {
             SetScore[] result =
             [
                 new SetScore(
-                    match.Groups["User1"].Success ? match.Groups["User1"].Value.Trim('@').Trim() : senderLogin,
-                    byte.Parse(match.Groups["Points1"].Value)),
+                    regexMatch.Groups["User1"].Success ? regexMatch.Groups["User1"].Value.Trim('@').Trim() : senderLogin,
+                    byte.Parse(regexMatch.Groups["Points1"].Value)),
                 new SetScore(
-                    match.Groups["User2"].Value.Trim('@').Trim(),
-                    byte.Parse(match.Groups["Points2"].Value))
+                    regexMatch.Groups["User2"].Value.Trim('@').Trim(),
+                    byte.Parse(regexMatch.Groups["Points2"].Value))
             ];
 
             return (result
                 .OrderByDescending(p => p.Points)
-                .ToArray(), match.Groups["Length"].Success ? byte.Parse(match.Groups["Length"].Value) : (byte)3);
+                .ToArray(), regexMatch.Groups["Length"].Success ? byte.Parse(regexMatch.Groups["Length"].Value) : (byte)3);
         }
 
         throw new ValidationException("Неудалось разобрать сообщение");

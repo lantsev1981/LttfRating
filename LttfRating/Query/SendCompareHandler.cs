@@ -43,11 +43,25 @@ public class SendCompareHandler(
             return;
         }
 
+        InlineKeyboardButton[][] inlineKeyboard =
+        [
+            [
+                InlineKeyboardButton.WithCallbackData($"{gamerLogin2} 📊 {gamerLogin1}",
+                    $"/rating @{gamerLogin2} @{gamerLogin1}")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData($"🌟 {gamerLogin1}",
+                    $"/rating @{gamerLogin1}"),
+                InlineKeyboardButton.WithCallbackData($"🌟 {gamerLogin2}",
+                    $"/rating @{gamerLogin2}")
+            ]
+        ];
+
         await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
              {GetHeadToHeadStats(gamer1, gamer2, matches)}
              {GetAllMatchesStats(gamer1, gamer2, matches)}
-             """, FileName: FileName), token);
+             """, FileName: FileName, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
     }
 
     private string GetHeadToHeadStats(Gamer gamer1, Gamer gamer2, Match[] matches)
@@ -114,7 +128,7 @@ public class SendCompareHandler(
         var matches = Enumerable.Range(1, matchResults.Length).ToArray();
         var points = matchResults.Select(x => x.Point).ToArray();
         var ratings = matchResults.Select(x => x.Rating).ToArray();
-        
+
         // Основной график
         var scatter = plt.Add.Scatter(matches, points);
         scatter.LineWidth = 3;
@@ -184,7 +198,7 @@ public class SendCompareHandler(
 
         return result;
     }
-    
+
     private static int GetTickSpacing(float min, float max)
     {
         return (int)Math.Ceiling(Math.Abs(max - min) / 10);

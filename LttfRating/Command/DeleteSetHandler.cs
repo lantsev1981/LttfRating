@@ -13,12 +13,17 @@ public class DeleteSetHandler(
 
     public async Task Handle(DeleteSetCommand request, CancellationToken token)
     {
+        var regexMatch = UpdateExtensions.DeleteSetRegex.Match(request.Input.Text);
+        if (!regexMatch.Success)
+            throw new ValidationException("Неудалось разобрать сообщение");
+        
+        var chatId = long.Parse(regexMatch.Groups["ChatId"].Value.Trim());
+        var messageId = int.Parse(regexMatch.Groups["MessageId"].Value.Trim());
+        
         var set = await store.SetStore.GetByKey(
-            new ChatMessage(request.Input.ChatId, request.Input.MessageId), token,
-            q => q.Include(p => p.Match.Gamers));
-
-        if (set is null)
-            return;
+            new ChatMessage(chatId, messageId), token,
+            q => q.Include(p => p.Match.Gamers))
+            ?? throw new ValidationException("Партия не найдена");
 
         var sender = request.Input.Sender.Login;
         var isAdmin = _config.Administrators.Contains(sender);

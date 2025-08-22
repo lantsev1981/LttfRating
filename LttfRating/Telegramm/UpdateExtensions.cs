@@ -182,6 +182,10 @@ public static class UpdateExtensions
         @"(?<Points2>25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])" +
         @"(\s+(?<Length>25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))?\s*$",
         RegexOptions.Compiled);
+    
+    public static readonly Regex DeleteSetRegex = new(
+        @"^/deleteset(?:@LttfRatingBot)?\s+(?<ChatId>-?\d+)\s+(?<MessageId>\d+)\s*$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static CommandType GetCommandType(this TelegramInput value)
     {
@@ -205,7 +209,7 @@ public static class UpdateExtensions
         if (SetScoreRegex.IsMatch(input))
             return CommandType.SetScore;
 
-        if (value.UpdateType == UpdateType.MessageReaction.ToString() && input.TrimEnd().EndsWith("👎"))
+        if (DeleteSetRegex.IsMatch(input))
             return CommandType.DeleteSet;
 
         return CommandType.Unknown;
