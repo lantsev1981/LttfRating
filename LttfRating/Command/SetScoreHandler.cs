@@ -3,7 +3,6 @@
 public record SetScoreCommand(TelegramInput Input) : IRequest;
 
 public class SetScoreHandler(
-    ILogger<SetScoreHandler> logger,
     IMediator mediator,
     IOptions<ApiConfig> config)
     : IRequestHandler<SetScoreCommand>

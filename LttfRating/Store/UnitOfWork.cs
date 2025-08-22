@@ -31,6 +31,5 @@ public class UnitOfWork(IServiceProvider serviceProvider) : IUnitOfWork, IDispos
     private Lazy<T> GetService<T, TT>() where T : IDomainStore<TT>
         => new(() => _scope.ServiceProvider.GetRequiredService<T>());
 
-    new
-        public void Dispose() => _scope.Dispose();
+    public void Dispose() => _scope.Dispose();
 }

@@ -1,6 +1,7 @@
 ﻿// Global using directives
 
 global using System.ComponentModel.DataAnnotations;
+global using System.Globalization;
 global using System.Text.RegularExpressions;
 global using Common;
 global using DbMigration;
@@ -13,6 +14,7 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
+global using ScottPlot;
 global using Serilog;
 global using Telegram.Bot;
 global using Telegram.Bot.Exceptions;
