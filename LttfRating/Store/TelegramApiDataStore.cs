@@ -8,7 +8,7 @@ public class TelegramInputStore(AppDbContext context) : IDomainStore<TelegramInp
         throw new NotImplementedException();
     }
 
-    public async Task<IEnumerable<TelegramInput>> GetItems(CancellationToken token,
+    public async Task<TelegramInput[]> GetItems(CancellationToken token,
         Func<IQueryable<TelegramInput>, IQueryable<TelegramInput>>? includeQuery = null)
     {
         var query = context.TelegramInputs

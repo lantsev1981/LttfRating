@@ -18,9 +18,11 @@ public class RecalculateRatingHandler(
         foreach (var gamer in gamers)
             gamer.Rating = 1;
 
-        foreach (var match in await store.MatchStore.GetItems(token, q => q
-                     .Include(p => p.Gamers)
-                     .Include(p => p.Sets)))
+        var matches = await store.MatchStore.GetItems(token, q => q
+            .Include(p => p.Gamers)
+            .Include(p => p.Sets));
+        
+        foreach (var match in matches)
         {
             match.CalculateRating();
 

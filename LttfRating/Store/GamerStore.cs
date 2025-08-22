@@ -26,7 +26,7 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
             .SingleOrDefaultAsync(p => p.Login == key, token);
     }
 
-    public async Task<IEnumerable<Gamer>> GetItems(CancellationToken token,
+    public async Task<Gamer[]> GetItems(CancellationToken token,
         Func<IQueryable<Gamer>, IQueryable<Gamer>>? includeQuery = null)
     {
         var query = context.Gamers

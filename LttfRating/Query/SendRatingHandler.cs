@@ -14,11 +14,9 @@ public class SendRatingHandler(
             throw new ValidationException("Неудалось разобрать сообщение");
         
         var viewLogin = match.Groups["User"].Success ? match.Groups["User"].Value.Trim('@').Trim() : request.Input.Sender.Login;
-        
-        var allGamers = (await store.GameStore.GetItems(token))
-            .Where(p => p.Rating != 1) // исключаем "нейтральных"
-            .OrderByDescending(p => p.Rating)
-            .ToArray();
+
+        var allGamers = await store.GameStore.GetItems(token, g => g
+            .Where(p => p.Rating != 1)); // исключаем "нейтральных"
 
         var gamer = await store.GameStore.GetByKey(viewLogin, token, q => q
                 .Include(p => p.Matches)
@@ -78,8 +76,7 @@ public class SendRatingHandler(
         // Самый длинный победный и проигрышный серия
         var results = gamer.Matches
             .Where(m => !m.IsPending)
-            .Select(m => m.LastWinner == gamer)
-            .ToArray();
+            .Select(m => m.LastWinner == gamer);
 
         int longestWinStreak = 0, currentWinStreak = 0;
         int longestLossStreak = 0, currentLossStreak = 0;

@@ -19,7 +19,7 @@ public class SetStore(AppDbContext context) : IDomainStore<Set>
             .SingleOrDefaultAsync(p => p.ChatId == key.ChatId && p.MessageId == key.MessageId, token);
     }
 
-    public Task<IEnumerable<Set>> GetItems(CancellationToken token,
+    public Task<Set[]> GetItems(CancellationToken token,
         Func<IQueryable<Set>, IQueryable<Set>>? includeQuery = null)
     {
         throw new NotImplementedException();

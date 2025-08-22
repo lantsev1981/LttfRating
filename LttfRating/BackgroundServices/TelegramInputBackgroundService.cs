@@ -16,6 +16,7 @@ public class TelegramInputBackgroundService(
         var store = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var inputs = await store.TelegramInputStore.GetItems(token);
+        
         foreach (var input in inputs)
         {
             try

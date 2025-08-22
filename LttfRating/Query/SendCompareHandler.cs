@@ -12,10 +12,10 @@ public class SendCompareHandler(
         var regexMatch = UpdateExtensions.CompareRatingRegex.Match(request.Input.Text);
         if (!regexMatch.Success)
             throw new ValidationException("Неудалось разобрать сообщение");
-        
+
         var gamerLogin1 = regexMatch.Groups["User1"].Value.Trim('@').Trim();
         var gamerLogin2 = regexMatch.Groups["User2"].Value.Trim('@').Trim();
-        
+
         if (gamerLogin1 == gamerLogin2)
             throw new ValidationException("Необходимо указать разных игроков");
 
@@ -24,11 +24,10 @@ public class SendCompareHandler(
         var gamer2 = await store.GameStore.GetByKey(gamerLogin2, token)
                      ?? throw new ValidationException($"@{gamerLogin2} - пока нет в рейтинге");
 
-        var commonMatches = (await store.MatchStore.GetItems(token, m => m
+        var commonMatches = await store.MatchStore.GetItems(token, m => m
             .Include(p => p.Gamers)
             .Include(p => p.Sets)
-            .Where(p => p.Gamers.Contains(gamer1) && p.Gamers.Contains(gamer2))))
-            .ToArray();
+            .Where(p => p.Gamers.Contains(gamer1) && p.Gamers.Contains(gamer2)));
 
         if (commonMatches.Length == 0)
         {

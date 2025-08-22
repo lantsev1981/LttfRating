@@ -19,7 +19,7 @@ public class MatchStore(AppDbContext context) : IDomainStore<Match>
             .SingleOrDefaultAsync(p => p.Id == key, token);
     }
 
-    public async Task<IEnumerable<Match>> GetItems(CancellationToken token,
+    public async Task<Match[]> GetItems(CancellationToken token,
         Func<IQueryable<Match>, IQueryable<Match>>? includeQuery = null)
     {
         var query = context.Matches
@@ -33,7 +33,7 @@ public class MatchStore(AppDbContext context) : IDomainStore<Match>
             .Where(p => !p.IsPending)
             .ToArrayAsync(token);
         
-        return matches.OrderByDate();
+        return matches.OrderByDate().ToArray();
     }
 
     public Task AddAsync(Match item, CancellationToken token)
