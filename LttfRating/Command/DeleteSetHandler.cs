@@ -15,7 +15,7 @@ public class DeleteSetHandler(
     {
         var regexMatch = UpdateExtensions.DeleteSetRegex.Match(request.Input.Text);
         if (!regexMatch.Success)
-            throw new ValidationException("Неудалось разобрать сообщение");
+            throw new ValidationException("Не удалось разобрать сообщение");
         
         var chatId = long.Parse(regexMatch.Groups["ChatId"].Value.Trim());
         var messageId = int.Parse(regexMatch.Groups["MessageId"].Value.Trim());
@@ -30,7 +30,7 @@ public class DeleteSetHandler(
         var isGamer = set.Match.Gamers.Any(p => p.Login == sender);
         if (isAdmin || isGamer)
         {
-            // игрок может отменить игру только в течении часа
+            // игрок может отменить игру только в течение часа
             if (!isAdmin && DateTimeOffset.UtcNow - set.Date > TimeSpan.FromHours(1))
                 throw new ValidationException("Отменить партию можно только в течении часа");
 
@@ -53,7 +53,7 @@ public class DeleteSetHandler(
 
                 await mediator.Send(new SendMessageQuery(recipient.Value,
                     $"""
-                     ⚠️<b>Партия #{set.Num} • отменена</b>
+                     ⚠️<b>Партия (⚔️) #{set.Num} • отменена</b>
 
                      <i>@{winner.Login} {set.WonPoint} 🆚 {set.LostPoint} @{loser.Login}</i>
                      """), token);

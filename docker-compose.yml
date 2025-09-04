@@ -1,7 +1,13 @@
-﻿services:
+﻿networks:
+  default:
+    external: true # использовать созданную сеть
+    name: app_network
+
+services:
   LttfRating:
     image: lttf_rating
     restart: always
+    container_name: lttf_rating    
     build:
       context: .
       dockerfile: LttfRating/Dockerfile
@@ -9,3 +15,5 @@
       - C:/docker/lttf_rating:/app/config
     environment:
       - ASPNETCORE_ENVIRONMENT=PROD
+    networks:
+      - default

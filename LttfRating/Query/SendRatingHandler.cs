@@ -11,7 +11,7 @@ public class SendRatingHandler(
     {
         var regexMatch = UpdateExtensions.GetRatingRegex.Match(request.Input.Text);
         if (!regexMatch.Success)
-            throw new ValidationException("Неудалось разобрать сообщение");
+            throw new ValidationException("Не удалось разобрать сообщение");
         
         var viewLogin = regexMatch.Groups["User"].Success ? regexMatch.Groups["User"].Value.Trim('@').Trim() : request.Input.Sender.Login;
 
@@ -57,6 +57,7 @@ public class SendRatingHandler(
             .Select(g => new
             {
                 Opponent = g.Key,
+                SetsCount = g.Sum(m => m.Sets.Count),
                 Wins = g.Count(m => m.LastWinner == gamer),
                 Losses = g.Count(m => m.LastWinner != gamer),
                 PointsWon = g.Sum(m => m.Sets.Sum(s => s.GetPoints(gamer.Login))),
@@ -67,6 +68,7 @@ public class SendRatingHandler(
             .ToArray();
 
         // Общая статистика
+        int totalSetsCount = statsByOpponent.Sum(s => s.SetsCount);
         int totalWins = statsByOpponent.Sum(s => s.Wins);
         int totalLosses = statsByOpponent.Sum(s => s.Losses);
         int totalPointsWon = statsByOpponent.Sum(s => s.PointsWon);
@@ -101,7 +103,8 @@ public class SendRatingHandler(
         var opponentsView = string.Join("\n", statsByOpponent.Select(s =>
         {
             var opponentPlace = Array.IndexOf(allGamers, s.Opponent) + 1;
-            return $"{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}: <b> {s.Wins} — {s.Losses} </b> <code>({(s.PointsWon - s.PointsLost >= 0 ? "+" : "")}{s.PointsWon - s.PointsLost}●)</code>";
+            var subPoints = s.PointsWon - s.PointsLost;
+            return $"{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}: <b> {s.Wins} — {s.Losses} </b> <code>({(subPoints >= 0 ? "+" : "-")}{Math.Abs(subPoints / (float)s.SetsCount):F2} ●/⚔️)</code>";
         }));
 
         await mediator.Send(new SendMessageQuery(request.Input.ChatId,
@@ -113,7 +116,7 @@ public class SendRatingHandler(
 
              🏓 Всего матчей: {totalWins + totalLosses}
              📈 Побед: {totalWins} | Поражений: {totalLosses}
-              ⬤  Очки : <code>{(pointsDiff >= 0 ? "+" : "")}{pointsDiff}●</code>
+              ⬤/⚔️ : <code>{(pointsDiff >= 0 ? "+" : "-")}{Math.Abs(pointsDiff / (float)totalSetsCount):F2}●</code>
              🔁 Серии: побед {longestWinStreak}, проигрышей {longestLossStreak}
 
              Статистика по соперникам:

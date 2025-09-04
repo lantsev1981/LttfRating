@@ -27,10 +27,10 @@ public class SendResultHandler(
         ];
         await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
-             <i>Партия #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
+             <i>Партия (⚔️) #{lastSet.Num} • Матч до {match.SetWonCount} побед</i>
 
              <b>@{winner.Login} {lastSet.WonPoint:00} 🆚 {lastSet.LostPoint:00} @{loser.Login}</b>
-             📋 По партиям:  {match.WinnerSetCount} — {match.LoserSetCount}
+             ⚔️ По партиям:  {match.WinnerSetCount} — {match.LoserSetCount}
              """, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
 
         if (!match.IsPending)

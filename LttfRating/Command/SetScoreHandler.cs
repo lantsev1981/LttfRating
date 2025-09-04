@@ -19,7 +19,7 @@ public class SetScoreHandler(
         var isAdmin = _config.Administrators.Contains(sender);
         var isGamer = parseValue.SetScore.Select(p => p.Login).Contains(sender);
         if (!isAdmin && !isGamer)
-            throw new ValidationException("Результаты матча может отправить только участник партии");
+            throw new ValidationException("Результаты матча может отправить только участник партии (⚔️)");
 
         await mediator.Send(new AddGamerCommand(parseValue.SetScore[0].Login), token);
         await mediator.Send(new AddGamerCommand(parseValue.SetScore[1].Login), token);
@@ -50,7 +50,7 @@ public class SetScoreHandler(
                 .ToArray(), regexMatch.Groups["Length"].Success ? byte.Parse(regexMatch.Groups["Length"].Value) : (byte)3);
         }
 
-        throw new ValidationException("Неудалось разобрать сообщение");
+        throw new ValidationException("Не удалось разобрать сообщение");
     }
 
     private void ValueValidation(SetScore[] setValue)
@@ -62,14 +62,14 @@ public class SetScoreHandler(
             throw new ValidationException("Необходимо указать разных игроков");
 
         if (winner.Points < 11)
-            throw new ValidationException("Результат победителя должен быть не менее 11 очков");
+            throw new ValidationException("Результат победителя должен быть не менее 11 очков (●)");
 
         var pointDiff = winner.Points - loser.Points;
 
         if (winner.Points == 11 && pointDiff < 2)
-            throw new ValidationException("Разница в очках должна быть не менее 2");
+            throw new ValidationException("Разница в очках (●) должна быть не менее 2");
 
         if (winner.Points > 11 && pointDiff != 2)
-            throw new ValidationException("При игре на больше/меньше разница должна быть в 2 очка");
+            throw new ValidationException("При игре на больше/меньше разница должна быть в 2 очка (●)");
     }
 }
