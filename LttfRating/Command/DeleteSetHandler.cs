@@ -67,9 +67,6 @@ public class DeleteSetHandler(
 
             logger.LogTrace("{User} удалил партию (⚔️) {Set}", sender, $$"""{{{set.MatchId}}, {{set.Num}}}""");
 
-            await mediator.Send(new SendMessageQuery(request.Input.ChatId,
-                "", MessageId: request.Input.MessageId, DelMessage: true), token);
-
             HashSet<long?> recipients = [admin?.UserId, winner.UserId, loser.UserId, request.Input.ChatId];
             foreach (var recipient in recipients)
             {

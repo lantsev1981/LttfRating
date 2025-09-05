@@ -11,9 +11,6 @@ public class SetScoreHandler(
 
     public async Task Handle(SetScoreCommand request, CancellationToken token)
     {
-        await mediator.Send(new SendMessageQuery(request.Input.ChatId,
-            "", MessageId: request.Input.MessageId, DelMessage: true), token);
-
         var sender = request.Input.Sender.Login;
 
         var parseValue = ParseMatch(request.Input.Text, sender);
