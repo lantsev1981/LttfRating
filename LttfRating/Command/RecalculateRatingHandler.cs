@@ -24,10 +24,13 @@ public class RecalculateRatingHandler(
 
         foreach (var match in matches)
         {
-            var oldRating = match.CalculateRating();
-
             var winner = match.LastWinner;
             var loser = match.LastLoser;
+            var oldRating = new Rating { User = winner.Rating, Opponent = loser.Rating };
+            
+            var rating = match.ReCalculateRating(oldRating with { });
+            winner.Rating = rating.User;
+            loser.Rating = rating.Opponent;
 
             logger.LogTrace(
                 """
@@ -41,8 +44,8 @@ public class RecalculateRatingHandler(
                 $"{match.Sets.Sum(p => p.GetPoints(loser.Login))} {loser.Login}",
                 (string[])
                 [
-                    $"{winner.Rating * 100:F0} ({(winner.Rating - oldRating.Winner) * 100:F0})",
-                    $"{loser.Rating * 100:F0} ({(loser.Rating - oldRating.Loser) * 100:F0})"
+                    $"{winner.Rating * 100:F0} ({(winner.Rating - oldRating.User) * 100:F0})",
+                    $"{loser.Rating * 100:F0} ({(loser.Rating - oldRating.Opponent) * 100:F0})"
                 ]);
         }
 

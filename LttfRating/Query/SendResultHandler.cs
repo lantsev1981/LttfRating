@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record SendResultQuery(TelegramInput Input, Guid MatchId, OldRating OldRating) : IRequest;
+public record SendResultQuery(TelegramInput Input, Guid MatchId, Rating OldRating) : IRequest;
 
 public class SendResultHandler(
     IUnitOfWork store,
@@ -56,8 +56,9 @@ public class SendResultHandler(
             var winnerPoints = match.Sets.Sum(p => p.GetPoints(winner.Login));
             var loserPoints = points - winnerPoints;
             var subPoints = winnerPoints - loserPoints;
-            var winnerSubRating = winner.Rating - request.OldRating.Winner;
-            var loserSubRating = loser.Rating - request.OldRating.Loser;
+            var winnerSubRating = winner.Rating - request.OldRating.User;
+            var loserSubRating = loser.Rating - request.OldRating.Opponent;
+            
             await mediator.Send(new SendMessageQuery(request.Input.ChatId,
                 $"""
                  <i>Матч завершён</i>

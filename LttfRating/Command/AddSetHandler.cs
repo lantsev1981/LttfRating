@@ -1,14 +1,14 @@
 ﻿namespace LttfRating;
 
 public record AddSetCommand(TelegramInput Input, Guid MatchId, (SetScore[] SetScore, byte SetWonCount) ParseValue)
-    : IRequest<OldRating>;
+    : IRequest<Rating>;
 
 public class AddSetHandler(
     IUnitOfWork store,
     ILogger<AddSetHandler> logger)
-    : IRequestHandler<AddSetCommand, OldRating>
+    : IRequestHandler<AddSetCommand, Rating>
 {
-    public async Task<OldRating> Handle(AddSetCommand request, CancellationToken token)
+    public async Task<Rating> Handle(AddSetCommand request, CancellationToken token)
     {
         var winner = request.ParseValue.SetScore[0].Login;
         var loser = request.ParseValue.SetScore[1].Login;
@@ -35,14 +35,17 @@ public class AddSetHandler(
         match.Sets.Add(set);
 
         var needCalculate = match.Sets.Count(p => p.WinnerLogin == winner) == match.SetWonCount;
-
-        OldRating oldRating = default!;
+        var oldRating = new Rating { User = match.LastWinner.Rating, Opponent = match.LastLoser.Rating };
+        
         if (needCalculate)
         {
-            logger.LogTrace("Расчитываем рейтинг: @{Winner} — @{Loser}",
+            logger.LogTrace("Рассчитываем рейтинг: @{Winner} — @{Loser}",
                 winner, loser);
 
-            oldRating = match.CalculateRating();
+            var startRating = match.ReCalculateRating(oldRating with { });
+            match.LastWinner.Rating = startRating.User;
+            match.LastLoser.Rating = startRating.Opponent;
+            match.IsPending = false;
         }
 
         await store.Update(token);

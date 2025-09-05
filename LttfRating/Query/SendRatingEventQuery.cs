@@ -42,8 +42,8 @@ public class SendRatingEventHandler(
         var oldCompareForChar = matches[..^1].GetCompareForChar(gamer1, gamer2);
         var newCompareForChar = matches.GetCompareForChar(gamer1, gamer2);
 
-        if (oldCompareForChar.Ratings <= 0 && newCompareForChar.Ratings > 0)
-            improvements.Add($"по рейтингу 🌟 в личном зачёте <code>({(newCompareForChar.Ratings >= 0 ? "+" : "")}{newCompareForChar.Ratings * 100:F0}*)</code>");
+        if (oldCompareForChar.SubRating <= 0 && newCompareForChar.SubRating > 0)
+            improvements.Add($"по рейтингу 🌟 в личном зачёте <code>({(newCompareForChar.SubRating >= 0 ? "+" : "")}{newCompareForChar.SubRating * 100:F0}*)</code>");
         if (oldCompareForChar.Ma <= 0 && newCompareForChar.Ma > 0)
             improvements.Add($"по средней динамике роста очков ⬤");
 

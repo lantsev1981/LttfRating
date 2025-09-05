@@ -84,10 +84,8 @@ public class SendCompareHandler(
 
         GenerateCharDataImage(compare.SubPoints);
 
-        var subRating = gamer1.Rating - gamer2.Rating;
-
         return $"""
-                🌟 Рейтинг (в личном зачёте): {gamer1.Rating * 100:F0} — {gamer2.Rating * 100:F0} <code>({(subRating >= 0 ? "+" : "")}{subRating * 100:F0}*)</code>
+                🌟 Рейтинг (в личном зачёте): {compare.Ratings[0] * 100:F0} — {compare.Ratings[1] * 100:F0} <code>({(compare.SubRating >= 0 ? "+" : "")}{compare.SubRating * 100:F0}*)</code>
                 """;
     }
 

@@ -7,28 +7,21 @@ public static class MatchExtensions
         return items.OrderBy(p => p.Date);
     }
 
-    public static OldRating CalculateRating(this Match match)
+    public static Rating ReCalculateRating(this Match match, Rating rating)
     {
-        var winner = match.LastWinner;
-        var loser = match.LastLoser;
-
-        var oldRating = new OldRating(winner.Rating, loser.Rating);
-
         float points = match.Sets.Sum(p => p.Points);
-        float winnerPoints = match.Sets.Sum(p => p.GetPoints(winner.Login));
+        float winnerPoints = match.Sets.Sum(p => p.GetPoints(match.LastWinner.Login));
         float loserPoints = points - winnerPoints;
 
         // Формула изменения рейтинга (замкнутая система)
-        var opponentPrize = winnerPoints / points * (oldRating.Loser * 0.5f); // вознагаждение за силу противника
-        var losePointPenalty = loserPoints / points * (oldRating.Winner * 0.5f); // штраф за пропущенные очки
+        var opponentPrize = winnerPoints / points * (rating.Opponent * 0.5f); // вознаграждение за силу противника
+        var losePointPenalty = loserPoints / points * (rating.User * 0.5f); // штраф за пропущенные очки
         var change = opponentPrize - losePointPenalty;
 
-        winner.Rating += change;
-        loser.Rating -= change;
+        rating.User += change;
+        rating.Opponent -= change;
 
-        match.IsPending = false;
-
-        return oldRating;
+        return rating;
     }
 
     public static MatchesCompare GetCompare(this Match[] matches, Gamer gamer1, Gamer gamer2)
@@ -43,17 +36,16 @@ public static class MatchExtensions
         var points2 = matches.Sum(m => m.Sets.Sum(p => p.GetPoints(gamer2.Login)));
 
         return new MatchesCompare(
-            Ratings: [ gamer1.Rating, gamer2.Rating],
-            Wins: [ gamer1Wins, gamer2Wins],
-            Sets: [ sets1, sets2],
-            Points: [ points1, points2]
+            Ratings: [gamer1.Rating, gamer2.Rating],
+            Wins: [gamer1Wins, gamer2Wins],
+            Sets: [sets1, sets2],
+            Points: [points1, points2]
         );
     }
 
     public static MatchesCharCompare GetCompareForChar(this Match[] matches, Gamer gamer1, Gamer gamer2)
     {
-        gamer1.Rating = 1;
-        gamer2.Rating = 1;
+        var rating = new Rating { User = 1, Opponent = 1 };
 
         var subPoints = matches
             .SelectMany(m =>
@@ -62,18 +54,18 @@ public static class MatchExtensions
                     p.GetPoints(gamer1.Login) - p.GetPoints(gamer2.Login));
 
                 // пересчитываем рейтинг в личном зачёте
-                m.CalculateRating();
-                
+                m.ReCalculateRating(rating);
+
                 return result;
             })
             .ToArray();
-        
+
         var movingAvgStep = (int)Math.Floor(subPoints.Length / 4f);
         var movingAvg = CalculateMovingAvg(subPoints, movingAvgStep);
 
-        return new MatchesCharCompare(gamer1.Rating - gamer2.Rating, movingAvg.Last(), subPoints);
+        return new MatchesCharCompare([rating.User, rating.Opponent], movingAvg.Last(), subPoints);
     }
-    
+
     public static float[] CalculateMovingAvg(int[] data, int step)
     {
         float[] result = new float[data.Length - step + 1];
@@ -107,8 +99,9 @@ public record MatchesCompare(
 }
 
 public record MatchesCharCompare(
-    float Ratings,
+    float[] Ratings,
     float Ma,
-    int[] SubPoints);
-
-public record MatchResult(int Point);
+    int[] SubPoints)
+{
+    public float SubRating => Ratings[0] - Ratings[1];
+}
