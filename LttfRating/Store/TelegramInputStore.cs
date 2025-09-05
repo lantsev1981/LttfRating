@@ -30,11 +30,6 @@ public class TelegramInputStore(AppDbContext context) : IDomainStore<TelegramInp
         await context.SaveChangesAsync(token);
     }
 
-    public Task Update(TelegramInput? item, CancellationToken token)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task DeleteItem(TelegramInput item, CancellationToken token)
     {
         context.TelegramInputs.Remove(item);

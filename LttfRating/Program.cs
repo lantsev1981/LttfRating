@@ -35,12 +35,12 @@ class Program
                         ?? throw new InvalidOperationException("BotToken is missing")))
                     .AddSingleton<UpdateHandler>()
                     .AddSingleton<ErrorHandler>()
-                    .AddTransient<IGamerStore, GamerStore>()
-                    .AddTransient<IDomainStore<Gamer>, GamerStore>()
-                    .AddTransient<IDomainStore<Match>, MatchStore>()
-                    .AddTransient<IDomainStore<Set>, SetStore>()
-                    .AddTransient<IDomainStore<TelegramInput>, TelegramInputStore>()
-                    .AddTransient<IUnitOfWork, UnitOfWork>()
+                    .AddScoped<IGamerStore, GamerStore>()
+                    .AddScoped<IDomainStore<Gamer>, GamerStore>()
+                    .AddScoped<IDomainStore<Match>, MatchStore>()
+                    .AddScoped<IDomainStore<Set>, SetStore>()
+                    .AddScoped<IDomainStore<TelegramInput>, TelegramInputStore>()
+                    .AddScoped<IUnitOfWork, UnitOfWork>()
                     .AddDbContext<AppDbContext>(options =>
                         options.UseNpgsql(
                             configuration.GetConnectionString("AppUserConnectionString"),

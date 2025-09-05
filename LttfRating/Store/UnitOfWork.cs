@@ -6,30 +6,29 @@ public interface IUnitOfWork
     IDomainStore<Match> MatchStore { get; }
     IDomainStore<Set> SetStore { get; }
     IDomainStore<TelegramInput> TelegramInputStore { get; }
+    Task Update(CancellationToken token);
 }
 
-public class UnitOfWork(IServiceProvider serviceProvider) : IUnitOfWork, IDisposable
+public class UnitOfWork(
+    AppDbContext context,
+    IGamerStore gameStore,
+    IDomainStore<Match> matchStore,
+    IDomainStore<Set> setStore,
+    IDomainStore<TelegramInput> telegramInputStore) : IUnitOfWork
 {
-    private readonly IServiceScope _scope = serviceProvider.CreateScope();
-    private Lazy<IGamerStore>? _lazyGameStore;
-    private Lazy<IDomainStore<Match>>? _lazyMatchStore;
-    private Lazy<IDomainStore<Set>>? _lazySetStore;
-    private Lazy<IDomainStore<TelegramInput>>? _lazyTelegramInputStore;
+    public IGamerStore GameStore { get; } = gameStore;
+    public IDomainStore<Match> MatchStore { get; } = matchStore;
+    public IDomainStore<Set> SetStore { get; } = setStore;
+    public IDomainStore<TelegramInput> TelegramInputStore { get; } = telegramInputStore;
 
-    public IGamerStore GameStore
-        => (_lazyGameStore ??= GetService<IGamerStore, Gamer>()).Value;
+    public async Task Update(CancellationToken token)
+    {
+        if (!context.ChangeTracker.HasChanges())
+            return;
 
-    public IDomainStore<Match> MatchStore
-        => (_lazyMatchStore ??= GetService<IDomainStore<Match>, Match>()).Value;
+        var result = await context.SaveChangesAsync(token);
 
-    public IDomainStore<Set> SetStore
-        => (_lazySetStore ??= GetService<IDomainStore<Set>, Set>()).Value;
-
-    public IDomainStore<TelegramInput> TelegramInputStore
-        => (_lazyTelegramInputStore ??= GetService<IDomainStore<TelegramInput>, TelegramInput>()).Value;
-
-    private Lazy<T> GetService<T, TT>() where T : IDomainStore<TT>
-        => new(() => _scope.ServiceProvider.GetRequiredService<T>());
-
-    public void Dispose() => _scope.Dispose();
+        if (result < 1)
+            throw new OperationException($"Изменения не применились");
+    }
 }

@@ -36,7 +36,7 @@ public class GetOrAddMatchHandler(
 
             winner.Matches.Add(match);
 
-            await store.GameStore.Update(winner, token);
+            await store.Update(token);
         }
 
         return match.Id;

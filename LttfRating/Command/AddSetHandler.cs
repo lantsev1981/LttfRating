@@ -45,7 +45,7 @@ public class AddSetHandler(
             oldRating = match.CalculateRating();
         }
 
-        await store.MatchStore.Update(match, token);
+        await store.Update(token);
 
         return oldRating;
     }

@@ -5,6 +5,7 @@ public record SendMessageQuery(
     string MessageText,
     int? MessageId = null,
     string? FileName = null,
+    bool DelMessage = false,
     InlineKeyboardMarkup? Buttons = null)
     : IRequest;
 
@@ -17,6 +18,12 @@ public class SendMessageHandler(
     {
         try
         {
+            if (request.DelMessage)
+            {
+                await botClient.DeleteMessage(request.ChatId, request.MessageId!.Value, token);
+                return;
+            }
+            
             if (request.FileName != null)
             {
                 await using var stream = File.OpenRead(request.FileName);
@@ -51,7 +58,8 @@ public class SendMessageHandler(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Не удалось отправить сообщение");
+            logger.LogError(e, "Не удалось отправить сообщение: {ChatId}, {Text}",
+                request.ChatId, request.MessageText);
         }
     }
 }

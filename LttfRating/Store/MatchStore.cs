@@ -41,19 +41,9 @@ public class MatchStore(AppDbContext context) : IDomainStore<Match>
         throw new NotImplementedException();
     }
 
-    public async Task Update(Match? item, CancellationToken token)
+    public async Task DeleteItem(Match item, CancellationToken token)
     {
-        if (!context.ChangeTracker.HasChanges())
-            return;
-
-        var result = await context.SaveChangesAsync(token);
-
-        if (result < 1)
-            throw new OperationException($"{nameof(Match)}.{item?.Id}: изменения не применились");
-    }
-
-    public Task DeleteItem(Match item, CancellationToken token)
-    {
-        throw new NotImplementedException();
+        context.Matches.Remove(item);
+        await context.SaveChangesAsync(token);
     }
 }

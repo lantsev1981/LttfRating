@@ -12,7 +12,7 @@ public class RecalculateRatingHandler(
     {
         var admin = await store.GameStore.GetAdminGamerId(token);
         if (admin?.Login != request.Input.Sender.Login)
-            return;
+            throw new ValidationException("Пересчёт рейтинга может вызвать только администратор");
 
         var gamers = await store.GameStore.GetItems(token);
         foreach (var gamer in gamers)
@@ -46,11 +46,11 @@ public class RecalculateRatingHandler(
                 ]);
         }
 
-        await store.MatchStore.Update(null!, token);
+        await store.Update(token);
 
-        await mediator.Send(new SendMessageQuery(admin.UserId!.Value,
+        await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
-             ⚠️ <b>Рейтиг пересчитан</b>
+             ⚠️ <b>Рейтинг пересчитан</b>
              """), token);
     }
 }

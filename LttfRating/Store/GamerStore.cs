@@ -49,17 +49,6 @@ public class GamerStore(AppDbContext context, IOptions<ApiConfig> config) : IGam
         await context.SaveChangesAsync(token);
     }
 
-    public async Task Update(Gamer? item, CancellationToken token)
-    {
-        if (!context.ChangeTracker.HasChanges())
-            return;
-
-        var result = await context.SaveChangesAsync(token);
-
-        if (result < 1)
-            throw new OperationException($"{nameof(Gamer)}.{item?.Login}: изменения не применились");
-    }
-
     public Task DeleteItem(Gamer item, CancellationToken token)
     {
         throw new NotImplementedException();

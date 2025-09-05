@@ -10,7 +10,5 @@ public interface IDomainStore<TEntry>
 
     Task AddAsync(TEntry item, CancellationToken token);
 
-    Task Update(TEntry? item, CancellationToken token);
-
     Task DeleteItem(TEntry item, CancellationToken token);
 }

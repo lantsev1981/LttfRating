@@ -11,6 +11,9 @@ public class SetScoreHandler(
 
     public async Task Handle(SetScoreCommand request, CancellationToken token)
     {
+        await mediator.Send(new SendMessageQuery(request.Input.ChatId,
+            "", MessageId: request.Input.MessageId, DelMessage: true), token);
+
         var sender = request.Input.Sender.Login;
 
         var parseValue = ParseMatch(request.Input.Text, sender);
@@ -38,16 +41,22 @@ public class SetScoreHandler(
             SetScore[] result =
             [
                 new SetScore(
-                    regexMatch.Groups["User1"].Success ? regexMatch.Groups["User1"].Value.Trim('@').Trim() : senderLogin,
+                    regexMatch.Groups["User1"].Success
+                        ? regexMatch.Groups["User1"].Value.Trim('@').Trim()
+                        : senderLogin,
                     byte.Parse(regexMatch.Groups["Points1"].Value)),
                 new SetScore(
                     regexMatch.Groups["User2"].Value.Trim('@').Trim(),
                     byte.Parse(regexMatch.Groups["Points2"].Value))
             ];
 
+            var length = regexMatch.Groups["Length"].Success ? byte.Parse(regexMatch.Groups["Length"].Value) : (byte)3;
+            if (length is < 1 or > 5)
+                throw new ValidationException("Длинна матча должна быть от 1 до 5 побед");
+
             return (result
                 .OrderByDescending(p => p.Points)
-                .ToArray(), regexMatch.Groups["Length"].Success ? byte.Parse(regexMatch.Groups["Length"].Value) : (byte)3);
+                .ToArray(), length);
         }
 
         throw new ValidationException("Не удалось разобрать сообщение");

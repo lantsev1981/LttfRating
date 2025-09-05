@@ -23,7 +23,7 @@ public class AddGamerHandler(
         if (request.UserId is not null && gamer.UserId is null)
         {
             gamer.UserId = request.UserId;
-            await store.GameStore.Update(gamer, token);
+            await store.Update(token);
 
             return true;
         }
