@@ -66,6 +66,10 @@ public class SendResultHandler(
                   ⬤  По очкам: {winnerPoints} — {loserPoints} <code>({(subPoints >= 0 ? "+" : "")}{subPoints}●)</code>
                  🌟 Рейтинг: {winner.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0}*)</code> — {loser.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0}*)</code>
                  """, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
+            
+            // Проверяем события
+            await mediator.Send(new SendRatingEventQuery(request.Input, [winner.Login, loser.Login]), token);
+            await mediator.Send(new SendRatingEventQuery(request.Input, [loser.Login, winner.Login]), token);
         }
     }
 }

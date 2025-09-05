@@ -16,7 +16,7 @@ public class TelegramInputBackgroundService(
         var store = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var inputs = await store.TelegramInputStore.GetItems(token);
-        
+
         foreach (var input in inputs)
         {
             try
@@ -32,7 +32,7 @@ public class TelegramInputBackgroundService(
                     """,
                     input,
                     e.GetAllMessages());
-                
+
                 await SendValidationError(mediator, input.ChatId, input.Sender.Login, e.Message, token);
             }
             catch (Exception e)
@@ -45,7 +45,7 @@ public class TelegramInputBackgroundService(
                     input,
                     e.GetAllMessages());
             }
-                
+
             await store.TelegramInputStore.DeleteItem(input, token);
         }
 
@@ -60,7 +60,7 @@ public class TelegramInputBackgroundService(
     {
         logger.LogTrace("Обрабатываем сообщение: {Text} от @{Username}",
             input.Text, input.Sender.Login);
-        
+
         // добавляем пользователя
         if (await mediator.Send(new AddGamerCommand(input.Sender.Login, input.Sender.Id), token))
         {
@@ -108,7 +108,7 @@ public class TelegramInputBackgroundService(
                 await mediator.Send(new SendRatingQuery(input), token);
                 break;
             case CommandType.CompareRating:
-                await mediator.Send(new SendCompareQuery(input), token);   
+                await mediator.Send(new SendCompareQuery(input), token);
                 break;
             case CommandType.RecalculateRating:
                 await mediator.Send(new RecalculateRatingCommand(input), token);
@@ -121,8 +121,9 @@ public class TelegramInputBackgroundService(
                 break;
         }
     }
-        
-    async Task SendValidationError(IMediator mediator, long chatId, string username, string errorMessage, CancellationToken token)
+
+    async Task SendValidationError(IMediator mediator, long chatId, string username, string errorMessage,
+        CancellationToken token)
     {
         var adminLinks = string.Join(", ", _config.Administrators.Select(admin =>
             $"<a href=\"tg://user?id={admin}\">@{admin}</a>"));

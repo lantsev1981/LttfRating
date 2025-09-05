@@ -30,6 +30,7 @@ public class SetScoreHandler(
         var matchId = await mediator.Send(new GetOrAddMatchCommand(
             parseValue.SetScore[0].Login, parseValue.SetScore[1].Login, parseValue.SetWonCount), token);
         var oldRating = await mediator.Send(new AddSetCommand(request.Input, matchId, parseValue), token);
+        
         await mediator.Send(new SendResultQuery(request.Input, matchId, oldRating), token);
     }
 

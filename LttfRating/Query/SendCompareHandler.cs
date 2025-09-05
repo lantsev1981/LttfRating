@@ -7,8 +7,6 @@ public class SendCompareHandler(
     IMediator mediator)
     : IRequestHandler<SendCompareQuery>
 {
-    private record MatchResult(int Point);
-
     private const string FileName = "compare.png";
 
     public async Task Handle(SendCompareQuery request, CancellationToken token)
@@ -67,54 +65,24 @@ public class SendCompareHandler(
 
     private string GetHeadToHeadStats(Gamer gamer1, Gamer gamer2, Match[] matches)
     {
-        var gamer1Wins = matches.Count(m => m.LastWinner == gamer1);
-        var gamer2Wins = matches.Count(m => m.LastWinner == gamer2);
-
-        var totalSetsGamer1 = matches.Sum(m => m.Sets.Count(s => s.WinnerLogin == gamer1.Login));
-        var totalSetsGamer2 = matches.Sum(m => m.Sets.Count(s => s.WinnerLogin == gamer2.Login));
-
-        var totalPointsGamer1 = matches.Sum(m => m.Sets.Sum(p => p.GetPoints(gamer1.Login)));
-        var totalPointsGamer2 = matches.Sum(m => m.Sets.Sum(p => p.GetPoints(gamer2.Login)));
-
-        var subRating = gamer1.Rating - gamer2.Rating;
-        var subWins = gamer1Wins - gamer2Wins;
-        var subSets = totalSetsGamer1 - totalSetsGamer2;
-        var totalSets = matches.Sum(p => p.Sets.Count);
-        var subPoints = totalPointsGamer1 - totalPointsGamer2;
-
+        var compare = matches.GetCompare(gamer1, gamer2);
+        
         return $"""
                 <b>@{gamer1.Login} 🆚 @{gamer2.Login}</b>
-                🌟 Рейтинг (в общем зачёте): {gamer1.Rating * 100:F0} — {gamer2.Rating * 100:F0} <code>({(subRating >= 0 ? "+" : "")}{subRating * 100:F0}*)</code>
-                🏓 По матчам: {gamer1Wins} — {gamer2Wins} <code>({(subWins >= 0 ? "+" : "")}{subWins})</code>
-                ⚔️ По партиям: {totalSetsGamer1} — {totalSetsGamer2} <code>({(subSets >= 0 ? "+" : "")}{subSets})</code>
-                 ⬤  По очкам: {totalPointsGamer1} — {totalPointsGamer2} <code>({(subPoints >= 0 ? "+" : "")}{subPoints}●)</code>
-                 ⬤ / ⚔️: <code>({(subPoints >= 0 ? "+" : "-")}{Math.Abs(subPoints / (float)totalSets):F2}●)</code>
+                🌟 Рейтинг (в общем зачёте): {gamer1.Rating * 100:F0} — {gamer2.Rating * 100:F0} <code>({(compare.SubRating >= 0 ? "+" : "")}{compare.SubRating * 100:F0}*)</code>
+                🏓 По матчам: {compare.Wins[0]} — {compare.Wins[1]} <code>({(compare.SubWins >= 0 ? "+" : "")}{compare.SubWins})</code>
+                ⚔️ По партиям: {compare.Sets[0]} — {compare.Sets[1]} <code>({(compare.SubSets >= 0 ? "+" : "")}{compare.SubSets})</code>
+                 ⬤  По очкам: {compare.Points[0]} — {compare.Points[1]} <code>({(compare.SubPoints >= 0 ? "+" : "")}{compare.SubPoints}●)</code>
+                 ⬤ / ⚔️: <code>({(compare.SubPointsPerSet >= 0 ? "+" : "-")}{compare.SubPointsPerSet:F2}●)</code>
                 """;
     }
 
     private string GetAllMatchesStats(Gamer gamer1, Gamer gamer2, Match[] matches)
     {
-        gamer1.Rating = 1;
-        gamer2.Rating = 1;
+        
+        var compare = matches.GetCompareForChar(gamer1, gamer2);
 
-        var matchResults = matches
-            .SelectMany(m =>
-            {
-                var result = m.Sets.Select(p =>
-                    new MatchResult(p.GetPoints(gamer1.Login) - p.GetPoints(gamer2.Login)));
-
-                // пересчитываем рейтинг в личном зачёте
-                m.CalculateRating();
-                
-                return result;
-//$"""
-//<i>#{matches.Length - index}</i> • <b>{setsGamer1} — {setsGamer2}</b> <code>({(subPoints >= 0 ? "+" : "")}{subPoints}●)</code> • <i>{m.Date:dd.MM.yyyy HH:mm}</i>
-//🌟 Рейтинг: {gamer1.Rating * 100:F0} <code>({(winnerSubRating >= 0 ? "+" : "")}{winnerSubRating * 100:F0}*)</code> — {gamer2.Rating * 100:F0} <code>({(loserSubRating >= 0 ? "+" : "")}{loserSubRating * 100:F0}*)</code>
-//"""
-            })
-            .ToArray();
-
-        GenerateCharDataImage(matchResults);
+        GenerateCharDataImage(compare.SubPoints);
 
         var subRating = gamer1.Rating - gamer2.Rating;
 
@@ -123,12 +91,11 @@ public class SendCompareHandler(
                 """;
     }
 
-    private static void GenerateCharDataImage(MatchResult[] matchResults)
+    private static void GenerateCharDataImage(int[] subPoints)
     {
         var plt = new Plot();
 
-        var matches = Enumerable.Range(1, matchResults.Length).ToArray();
-        var points = matchResults.Select(x => x.Point).ToArray();
+        var matches = Enumerable.Range(1, subPoints.Length).ToArray();
         
         var rightAxis = plt.Axes.AddRightAxis();
         
@@ -137,7 +104,7 @@ public class SendCompareHandler(
         zeroLine.Color = Colors.Green;
         zeroLine.LineWidth = 1;
         
-        var scatter = plt.Add.Scatter(matches, points);
+        var scatter = plt.Add.Scatter(matches, subPoints);
         scatter.Axes.YAxis = rightAxis;
         scatter.LineWidth = 0;
         scatter.MarkerSize = 4;
@@ -146,8 +113,8 @@ public class SendCompareHandler(
         //scatter.Smooth = true;
         scatter.LinePattern = LinePattern.Dotted;
 
-        var movingAvgStep = (int)Math.Floor(matchResults.Length / 4f);
-        var movingAvg = CalculateMovingAvg(points, movingAvgStep);
+        var movingAvgStep = (int)Math.Floor(subPoints.Length / 4f);
+        var movingAvg = MatchExtensions.CalculateMovingAvg(subPoints, movingAvgStep);
         var maScatter = plt.Add.Scatter(matches[(movingAvgStep - 1)..], movingAvg);
         maScatter.Axes.YAxis = rightAxis;
         maScatter.LineWidth = 3;
@@ -160,7 +127,7 @@ public class SendCompareHandler(
         plt.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericFixedInterval(
             GetTickSpacing(matches.Length, 0));
         plt.Axes.Right.TickGenerator = new ScottPlot.TickGenerators.NumericFixedInterval(
-            GetTickSpacing(points.Min(), points.Max()));
+            GetTickSpacing(subPoints.Min(), subPoints.Max()));
 
         // Настройка сетки для лучшей видимости делений
         plt.Grid.LineWidth = 1;
@@ -173,24 +140,6 @@ public class SendCompareHandler(
 
         plt.ShowLegend();
         plt.SavePng(FileName, 1200, 600);
-    }
-
-    private static float[] CalculateMovingAvg(int[] data, int step)
-    {
-        float[] result = new float[data.Length - step + 1];
-
-        for (var i = 0; i < result.Length; i++)
-        {
-            var sum = 0;
-            for (var j = 0; j < step; j++)
-            {
-                sum += data[i + j];
-            }
-
-            result[i] = sum / (float)step;
-        }
-
-        return result;
     }
 
     private static int GetTickSpacing(float min, float max)
