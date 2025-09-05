@@ -79,6 +79,7 @@ public class SendCompareHandler(
         var subRating = gamer1.Rating - gamer2.Rating;
         var subWins = gamer1Wins - gamer2Wins;
         var subSets = totalSetsGamer1 - totalSetsGamer2;
+        var totalSets = matches.Sum(p => p.Sets.Count);
         var subPoints = totalPointsGamer1 - totalPointsGamer2;
 
         return $"""
@@ -87,7 +88,7 @@ public class SendCompareHandler(
                 🏓 По матчам: {gamer1Wins} — {gamer2Wins} <code>({(subWins >= 0 ? "+" : "")}{subWins})</code>
                 ⚔️ По партиям: {totalSetsGamer1} — {totalSetsGamer2} <code>({(subSets >= 0 ? "+" : "")}{subSets})</code>
                  ⬤  По очкам: {totalPointsGamer1} — {totalPointsGamer2} <code>({(subPoints >= 0 ? "+" : "")}{subPoints}●)</code>
-                 ⬤ / ⚔️: <code>({(subPoints >= 0 ? "+" : "-")}{Math.Abs(subPoints / (float)subSets):F2}●)</code>
+                 ⬤ / ⚔️: <code>({(subPoints >= 0 ? "+" : "-")}{Math.Abs(subPoints / (float)totalSets):F2}●)</code>
                 """;
     }
 
