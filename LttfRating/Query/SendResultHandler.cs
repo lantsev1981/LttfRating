@@ -69,8 +69,7 @@ public class SendResultHandler(
                  """, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
             
             // Проверяем события
-            await mediator.Send(new SendRatingEventQuery(request.Input, [winner.Login, loser.Login]), token);
-            await mediator.Send(new SendRatingEventQuery(request.Input, [loser.Login, winner.Login]), token);
+            await mediator.Send(new SendRatingEventQuery(request.Input, [winner.Login, loser.Login],request.OldRatings), token);
         }
     }
 }
