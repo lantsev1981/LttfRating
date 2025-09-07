@@ -1,14 +1,14 @@
 ﻿namespace LttfRating;
 
 public record AddSetCommand(TelegramInput Input, Guid MatchId, (SetScore[] SetScore, byte SetWonCount) ParseValue)
-    : IRequest<Rating>;
+    : IRequest<Dictionary<string, float>>;
 
 public class AddSetHandler(
     IUnitOfWork store,
     ILogger<AddSetHandler> logger)
-    : IRequestHandler<AddSetCommand, Rating>
+    : IRequestHandler<AddSetCommand, Dictionary<string, float>>
 {
-    public async Task<Rating> Handle(AddSetCommand request, CancellationToken token)
+    public async Task<Dictionary<string, float>> Handle(AddSetCommand request, CancellationToken token)
     {
         var winner = request.ParseValue.SetScore[0].Login;
         var loser = request.ParseValue.SetScore[1].Login;
@@ -35,21 +35,26 @@ public class AddSetHandler(
         match.Sets.Add(set);
 
         var needCalculate = match.Sets.Count(p => p.WinnerLogin == winner) == match.SetWonCount;
-        var oldRating = new Rating { User = match.LastWinner.Rating, Opponent = match.LastLoser.Rating };
-        
+        var oldRatings = new Dictionary<string, float>
+        {
+            { winner, match.LastWinner.Rating },
+            { loser, match.LastLoser.Rating }
+        };
+
         if (needCalculate)
         {
             logger.LogTrace("Рассчитываем рейтинг: @{Winner} — @{Loser}",
                 winner, loser);
 
-            var startRating = match.ReCalculateRating(oldRating with { });
-            match.LastWinner.Rating = startRating.User;
-            match.LastLoser.Rating = startRating.Opponent;
+            var ratings = new Dictionary<string, float>(oldRatings);
+            match.ReCalculateRating(ratings);
+            match.LastWinner.Rating = ratings[winner];
+            match.LastLoser.Rating = ratings[loser];
             match.IsPending = false;
         }
 
         await store.Update(token);
 
-        return oldRating;
+        return oldRatings;
     }
 }

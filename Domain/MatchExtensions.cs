@@ -7,21 +7,25 @@ public static class MatchExtensions
         return items.OrderBy(p => p.Date);
     }
 
-    public static Rating ReCalculateRating(this Match match, Rating rating)
+    public static void ReCalculateRating(this Match match, Dictionary<string, float> ratings)
     {
+        if (ratings.Count != 2)
+            throw new ArgumentException("Для пересчёта рейтинга необходимо указать двух игроков");
+        
+        if (!ratings.ContainsKey(match.LastWinner.Login) || !ratings.ContainsKey(match.LastLoser.Login))
+            throw new ArgumentException("Указанные игроки не учавтствовали в данном матче");
+        
         float points = match.Sets.Sum(p => p.Points);
         float winnerPoints = match.Sets.Sum(p => p.GetPoints(match.LastWinner.Login));
         float loserPoints = points - winnerPoints;
 
         // Формула изменения рейтинга (замкнутая система)
-        var opponentPrize = winnerPoints / points * (rating.Opponent * 0.5f); // вознаграждение за силу противника
-        var losePointPenalty = loserPoints / points * (rating.User * 0.5f); // штраф за пропущенные очки
+        var opponentPrize = winnerPoints / points * (ratings[match.LastLoser.Login] * 0.5f); // вознаграждение за силу противника
+        var losePointPenalty = loserPoints / points * (ratings[match.LastWinner.Login] * 0.5f); // штраф за пропущенные очки
         var change = opponentPrize - losePointPenalty;
 
-        rating.User += change;
-        rating.Opponent -= change;
-
-        return rating;
+        ratings[match.LastWinner.Login] += change;
+        ratings[match.LastLoser.Login] -= change;
     }
 
     public static MatchesCompare GetCompare(this Match[] matches, Gamer gamer1, Gamer gamer2)
@@ -45,7 +49,7 @@ public static class MatchExtensions
 
     public static MatchesCharCompare GetCompareForChar(this Match[] matches, Gamer gamer1, Gamer gamer2)
     {
-        var rating = new Rating { User = 1, Opponent = 1 };
+        Dictionary<string, float>? ratings = null;
 
         var subPoints = matches
             .SelectMany(m =>
@@ -54,16 +58,24 @@ public static class MatchExtensions
                     p.GetPoints(gamer1.Login) - p.GetPoints(gamer2.Login));
 
                 // пересчитываем рейтинг в личном зачёте
-                m.ReCalculateRating(rating);
+                ratings ??= new Dictionary<string, float>
+                {
+                    {gamer1.Login, 1},
+                    {gamer2.Login, 1}
+                };
+                m.ReCalculateRating(ratings);
 
                 return result;
             })
             .ToArray();
 
+        if (ratings is null)
+            throw new ArgumentException("Отсуствуют совместные матчи указанных игроков");
+
         var movingAvgStep = (int)Math.Floor(subPoints.Length / 4f);
         var movingAvg = CalculateMovingAvg(subPoints, movingAvgStep);
 
-        return new MatchesCharCompare([rating.User, rating.Opponent], movingAvg.Last(), subPoints);
+        return new MatchesCharCompare(ratings, movingAvg.Last(), subPoints);
     }
 
     public static float[] CalculateMovingAvg(int[] data, int step)
@@ -99,9 +111,9 @@ public record MatchesCompare(
 }
 
 public record MatchesCharCompare(
-    float[] Ratings,
+    Dictionary<string, float> Ratings,
     float Ma,
     int[] SubPoints)
 {
-    public float SubRating => Ratings[0] - Ratings[1];
+    public float SubRating => Ratings.First().Value - Ratings.Last().Value;
 }

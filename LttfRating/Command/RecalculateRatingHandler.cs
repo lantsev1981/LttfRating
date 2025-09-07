@@ -26,11 +26,17 @@ public class RecalculateRatingHandler(
         {
             var winner = match.LastWinner;
             var loser = match.LastLoser;
-            var oldRating = new Rating { User = winner.Rating, Opponent = loser.Rating };
             
-            var rating = match.ReCalculateRating(oldRating with { });
-            winner.Rating = rating.User;
-            loser.Rating = rating.Opponent;
+            var oldRatings = new Dictionary<string, float>
+            {
+                { winner.Login, match.LastWinner.Rating },
+                { loser.Login, match.LastLoser.Rating }
+            };
+            
+            var ratings = new Dictionary<string, float>(oldRatings);
+            match.ReCalculateRating(ratings);
+            winner.Rating = ratings[winner.Login];
+            loser.Rating = ratings[loser.Login];
 
             logger.LogTrace(
                 """
@@ -44,8 +50,8 @@ public class RecalculateRatingHandler(
                 $"{match.Sets.Sum(p => p.GetPoints(loser.Login))} {loser.Login}",
                 (string[])
                 [
-                    $"{winner.Rating * 100:F0} ({(winner.Rating - oldRating.User) * 100:F0})",
-                    $"{loser.Rating * 100:F0} ({(loser.Rating - oldRating.Opponent) * 100:F0})"
+                    $"{winner.Rating * 100:F0} ({(winner.Rating - oldRatings[winner.Login]) * 100:F0})",
+                    $"{loser.Rating * 100:F0} ({(loser.Rating - oldRatings[loser.Login]) * 100:F0})"
                 ]);
         }
 

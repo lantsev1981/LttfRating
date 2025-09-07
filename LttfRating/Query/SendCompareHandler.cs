@@ -73,7 +73,7 @@ public class SendCompareHandler(
                 🏓 По матчам: {compare.Wins[0]} — {compare.Wins[1]} <code>({(compare.SubWins >= 0 ? "+" : "")}{compare.SubWins})</code>
                 ⚔️ По партиям: {compare.Sets[0]} — {compare.Sets[1]} <code>({(compare.SubSets >= 0 ? "+" : "")}{compare.SubSets})</code>
                  ⬤  По очкам: {compare.Points[0]} — {compare.Points[1]} <code>({(compare.SubPoints >= 0 ? "+" : "")}{compare.SubPoints}●)</code>
-                 ⬤ / ⚔️: <code>({(compare.SubPointsPerSet >= 0 ? "+" : "-")}{compare.SubPointsPerSet:F2}●)</code>
+                 ⬤ / ⚔️: <code>({(compare.SubPoints >= 0 ? "+" : "-")}{compare.SubPointsPerSet:F2}●)</code>
                 """;
     }
 
@@ -85,7 +85,7 @@ public class SendCompareHandler(
         GenerateCharDataImage(compare.SubPoints);
 
         return $"""
-                🌟 Рейтинг (в личном зачёте): {compare.Ratings[0] * 100:F0} — {compare.Ratings[1] * 100:F0} <code>({(compare.SubRating >= 0 ? "+" : "")}{compare.SubRating * 100:F0}*)</code>
+                🌟 Рейтинг (в личном зачёте): {compare.Ratings[gamer1.Login] * 100:F0} — {compare.Ratings[gamer2.Login] * 100:F0} <code>({(compare.SubRating >= 0 ? "+" : "")}{compare.SubRating * 100:F0}*)</code>
                 """;
     }
 
