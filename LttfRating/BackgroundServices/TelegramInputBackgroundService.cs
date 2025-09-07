@@ -15,38 +15,48 @@ public class TelegramInputBackgroundService(
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         var store = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-        var inputs = await store.TelegramInputStore.GetItems(token);
+        var items = await store.TelegramInputStore.GetItems(token);
 
-        foreach (var input in inputs)
+        foreach (var item in items)
         {
             try
             {
-                await DoItem(mediator, store, input, token);
-            }
-            catch (ValidationException e)
-            {
-                logger.LogError(
-                    e,
-                    """
-                    Сообщение {@Input}: ошибка обработки ({Message})
-                    """,
-                    input,
-                    e.GetAllMessages());
-
-                await SendValidationError(mediator, input.ChatId, input.Sender.Login, e.Message, token);
+                await DoItem(mediator, store, item, token);
             }
             catch (Exception e)
             {
-                logger.LogError(
-                    e,
-                    """
-                    Сообщение {@Input}: ошибка обработки ({Message})
-                    """,
-                    input,
-                    e.GetAllMessages());
+                logger.LogError(e,
+                    "Сообщение {@Input}: ошибка обработки {@Message}",
+                    item, e.GetAllMessages());
+
+                var messageText = e switch
+                {
+                    ValidationException =>
+                        $"""
+                         🤬 Ошибка обработки запроса
+                         
+                           {e.Message}
+                         """,
+                    ApiRequestException exp =>
+                        $"""
+                         🤬 Telegram API Error [{exp.HttpStatusCode}]
+                         
+                           {e.Message}
+                         """,
+                    _ => null
+                };
+
+                if (!string.IsNullOrWhiteSpace(messageText))
+                {
+                    await mediator.Send(new SendMessageQuery(item.ChatId,
+                        messageText, MessageId: item.MessageId), token);
+                }
+
+                await mediator.Send(new SendMessageQuery(item.ChatId,
+                    "🤬", MessageId: item.MessageId), token);
             }
 
-            await store.TelegramInputStore.DeleteItem(input, token);
+            await store.TelegramInputStore.DeleteItem(item, token);
         }
 
         return _config.TelegramInputInterval;
@@ -55,14 +65,17 @@ public class TelegramInputBackgroundService(
     private async Task DoItem(
         IMediator mediator,
         IUnitOfWork store,
-        TelegramInput input,
+        TelegramInput item,
         CancellationToken token)
     {
         logger.LogTrace("Обрабатываем сообщение: {Text} от @{Username}",
-            input.Text, input.Sender.Login);
+            item.Text, item.Sender.Login);
+        
+        await mediator.Send(new SendMessageQuery(item.ChatId,
+            "👨‍💻", MessageId: item.MessageId), token);
 
         // добавляем пользователя
-        if (await mediator.Send(new AddGamerCommand(input.Sender.Login, input.Sender.Id), token))
+        if (await mediator.Send(new AddGamerCommand(item.Sender.Login, item.Sender.Id), token))
         {
             var admin = await store.GameStore.GetAdminGamerId(token);
 
@@ -73,8 +86,8 @@ public class TelegramInputBackgroundService(
                      🆕 <b>НОВЫЙ ПОЛЬЗОВАТЕЛЬ</b>
                      ━━━━━━━━━━━━━━━━━━━
 
-                     ├ ID: <code>{input.Sender.Id}</code>
-                     ├ Логин: @{input.Sender.Login}
+                     ├ ID: <code>{item.Sender.Id}</code>
+                     └ Логин: @{item.Sender.Login}
                      """), token);
 
                 // ├ Имя: {data.User.BaseUser.FirstName}
@@ -83,11 +96,11 @@ public class TelegramInputBackgroundService(
             }
         }
 
-        var commandType = input.GetCommandType();
+        var commandType = item.GetCommandType();
         switch (commandType)
         {
             case CommandType.Start:
-                await mediator.Send(new SendMessageQuery(input.Sender.Id,
+                await mediator.Send(new SendMessageQuery(item.Sender.Id,
                     """
                     🤖 <b>Добро пожаловать в бот учёта рейтинга Lttf игроков в настольный теннис!</b>
 
@@ -105,35 +118,23 @@ public class TelegramInputBackgroundService(
                     """, FileName: "LttfRatingBotQr.jpg"), token);
                 break;
             case CommandType.GetRating:
-                await mediator.Send(new SendRatingQuery(input), token);
+                await mediator.Send(new SendRatingQuery(item), token);
                 break;
             case CommandType.CompareRating:
-                await mediator.Send(new SendCompareQuery(input), token);
+                await mediator.Send(new SendCompareQuery(item), token);
                 break;
             case CommandType.RecalculateRating:
-                await mediator.Send(new RecalculateRatingCommand(input), token);
+                await mediator.Send(new RecalculateRatingCommand(item), token);
                 break;
             case CommandType.SetScore:
-                await mediator.Send(new SetScoreCommand(input), token);
+                await mediator.Send(new SetScoreCommand(item), token);
                 break;
             case CommandType.DeleteSet:
-                await mediator.Send(new DeleteSetCommand(input), token);
+                await mediator.Send(new DeleteSetCommand(item), token);
                 break;
         }
-    }
 
-    async Task SendValidationError(IMediator mediator, long chatId, string username, string errorMessage,
-        CancellationToken token)
-    {
-        var adminLinks = string.Join(", ", _config.Administrators.Select(admin =>
-            $"<a href=\"tg://user?id={admin}\">@{admin}</a>"));
-
-        await mediator.Send(new SendMessageQuery(chatId,
-            $"""
-             ⚠️ @{username}, {errorMessage}.
-
-             Если это ошибка — обратитесь к администратору:
-             {adminLinks}
-             """), token);
+        await mediator.Send(new SendMessageQuery(item.ChatId,
+            "👍", MessageId: item.MessageId), token);
     }
 }

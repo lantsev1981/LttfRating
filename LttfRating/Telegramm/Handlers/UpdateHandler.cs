@@ -2,17 +2,15 @@
 
 public class UpdateHandler(
     IServiceProvider serviceProvider,
-    IOptions<ApiConfig> config,
-    ILogger<UpdateHandler> logger)
+    ILogger<UpdateHandler> logger,
+    ErrorHandler errorHandler)
 {
-    private readonly ApiConfig _config = config.Value;
 
     public async Task HandleAsync(ITelegramBotClient botClient, Update update, CancellationToken token)
     {
         // Зарегистрированы как Singleton, а нужен на каждый запрос новый AppContext
         using var scope = serviceProvider.CreateScope();
         var store = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var errorHandler = scope.ServiceProvider.GetRequiredService<ErrorHandler>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         
         try
@@ -22,18 +20,12 @@ public class UpdateHandler(
             if (input.Sender.Login is "")
             {
                 logger.LogTrace("Отсутствует логин {UserId}", input.Sender.Id);
-                
-                var adminLinks = string.Join(", ", _config.Administrators.Select(admin =>
-                    $"<a href=\"tg://user?id={admin}\">@{admin}</a>"));
 
                 await mediator.Send(new SendMessageQuery(input.Sender.Id,
                     $"""
                      ⚠️ <b>Привет! Для работы с ботом необходимо указать в настройках профиля логин</b>
 
                      Логин - это ключ, по которому я веду учёт партий (⚔️), без него ни как 😉
-
-                     Если это ошибка — обратитесь к администратору:
-                     {adminLinks}
                      """, FileName: "LoginSettings.jpg"), token);
 
                 return;
@@ -48,7 +40,7 @@ public class UpdateHandler(
                 
                 await store.TelegramInputStore.AddAsync(input, token);
                 
-                await mediator.Send(new SendMessageQuery(input.Sender.Id,
+                await mediator.Send(new SendMessageQuery(input.ChatId,
                     "🫡", MessageId: input.MessageId), token);
             }
         }

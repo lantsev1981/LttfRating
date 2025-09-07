@@ -12,7 +12,7 @@ public class RecalculateRatingHandler(
     {
         var admin = await store.GameStore.GetAdminGamerId(token);
         if (admin?.Login != request.Input.Sender.Login)
-            throw new ValidationException("Пересчёт рейтинга может вызвать только администратор");
+            throw new Exception($"[@{request.Input.Sender.Login}] пересчёт рейтинга может вызвать только администратор");
 
         var gamers = await store.GameStore.GetItems(token);
         foreach (var gamer in gamers)
