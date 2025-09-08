@@ -115,27 +115,27 @@ public class SendRatingHandler(
         {
             if (request.ByDay)
                 inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData(
-                    $"@{gamer.Login} 🆚 {s.Opponent.Login}", $"/rating @{gamer.Login} @{s.Opponent.Login}"));
-            
+                    $"@{gamer.Login} 📊 {s.Opponent.Login}", $"/rating @{gamer.Login} @{s.Opponent.Login}"));
+
             var opponentPlace = Array.IndexOf(allGamers, s.Opponent) + 1;
             var subPoints = s.PointsWon - s.PointsLost;
             return $"{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}: <b> {s.Wins} — {s.Losses} </b> <code>({(subPoints >= 0 ? "+" : "-")}{Math.Abs(subPoints / (float)s.SetsCount):F2} ●/⚔️)</code>";
         }));
         
         var dayPreview = !request.ByDay
-            ?"":
-            """
-            Привет! Лови свои успехи за день 😉
-            
-            """;
+            ? ""
+            : """
+              Привет! Лови свои успехи за день 😉
+
+              """;
 
         var viewDetail = !request.ByDay
-            ?"":
-            """
+            ? ""
+            : """
 
-            
-            Смотри детальную статистику по соперникам 👇
-            """;
+
+              Смотри детальную статистику по соперникам 👇
+              """;
 
         await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
@@ -152,6 +152,8 @@ public class SendRatingHandler(
 
              Статистика по соперникам:
              {opponentsView}{viewDetail}
-             """, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
+             """, Buttons: request.ByDay
+                ? new InlineKeyboardMarkup(new[] { inlineKeyboard.Select(p => p).ToArray() })
+                : new InlineKeyboardMarkup(inlineKeyboard)), token);
     }
 }
