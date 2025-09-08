@@ -21,12 +21,13 @@ public class SendCompareHandler(
         if (gamerLogin1 == gamerLogin2)
             throw new ValidationException("Необходимо указать разных игроков");
 
-        var gamer1 = await store.GameStore.GetByKey(gamerLogin1, token)
+        var gamer1 = await store.GamerStore.GetByKey(gamerLogin1, token)
                      ?? throw new ValidationException($"@{gamerLogin1} - пока нет в рейтинге");
-        var gamer2 = await store.GameStore.GetByKey(gamerLogin2, token)
+        var gamer2 = await store.GamerStore.GetByKey(gamerLogin2, token)
                      ?? throw new ValidationException($"@{gamerLogin2} - пока нет в рейтинге");
 
         var matches = await store.MatchStore.GetItems(token, m => m
+            .Where(p => p.Date.HasValue)
             .Include(p => p.Gamers)
             .Include(p => p.Sets)
             .Where(p => p.Gamers.Contains(gamer1) && p.Gamers.Contains(gamer2)));

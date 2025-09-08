@@ -9,13 +9,13 @@ public class AddGamerHandler(
 {
     public async Task<bool> Handle(AddGamerCommand request, CancellationToken token)
     {
-        var gamer = await store.GameStore.GetByKey(request.Login, token);
+        var gamer = await store.GamerStore.GetByKey(request.Login, token);
         if (gamer is null)
         {
             gamer = new Gamer(request.Login) { UserId = request.UserId };
 
             logger.LogTrace("Добавляем нового игрока: @{Login}", request.Login);
-            await store.GameStore.AddAsync(gamer, token);
+            await store.GamerStore.AddAsync(gamer, token);
 
             return request.UserId is not null;
         }

@@ -9,19 +9,19 @@ public class GetOrAddMatchHandler(
 {
     public async Task<Guid> Handle(GetOrAddMatchCommand request, CancellationToken token)
     {
-        var winner = await store.GameStore.GetByKey(request.Winner, token, q => q
-                         .Include(p => p.Matches)
-                         .ThenInclude(p => p.Gamers))
+        var winner = await store.GamerStore.GetByKey(request.Winner, token)
                      ?? throw new NullReferenceException($"Игрок {request.Winner} не найден");
         
-        var loser = await store.GameStore.GetByKey(request.Loser, token)
+        var loser = await store.GamerStore.GetByKey(request.Loser, token)
                     ?? throw new NullReferenceException($"Игрок {request.Loser} не найден");
 
         // Из-за удаления партий, может быть несколько открытых матчей
-        var match = winner.Matches
-            .FirstOrDefault(p =>
-                p.IsPending
-                && p.Gamers.Contains(loser));
+        var matches = await store.MatchStore.GetItems(token, m => m
+            .Where(p => !p.Date.HasValue)
+            .Include(p => p.Gamers)
+            .Where(p => p.Gamers.Contains(winner) && p.Gamers.Contains(loser)));
+        
+        var match = matches.SingleOrDefault();
 
         if (match is null)
         {

@@ -1,6 +1,6 @@
 ﻿namespace LttfRating;
 
-public record SendRatingQuery(TelegramInput Input) : IRequest;
+public record SendRatingQuery(TelegramInput Input, bool ByDay) : IRequest;
 
 public class SendRatingHandler(
     IUnitOfWork store,
@@ -13,12 +13,14 @@ public class SendRatingHandler(
         if (!regexMatch.Success)
             throw new ValidationException("Не удалось разобрать сообщение");
         
-        var viewLogin = regexMatch.Groups["User"].Success ? regexMatch.Groups["User"].Value.Trim('@').Trim() : request.Input.Sender.Login;
+        var viewLogin = regexMatch.Groups["User"].Success
+            ? regexMatch.Groups["User"].Value.Trim('@').Trim()
+            : request.Input.Sender.Login;
 
-        var allGamers = await store.GameStore.GetItems(token, g => g
+        var allGamers = await store.GamerStore.GetItems(token, g => g
             .Where(p => p.Rating != 1)); // исключаем "нейтральных"
 
-        var gamer = await store.GameStore.GetByKey(viewLogin, token, q => q
+        var gamer = await store.GamerStore.GetByKey(viewLogin, token, q => q
                 .Include(p => p.Matches)
                 .ThenInclude(p => p.Gamers)
                 .Include(p => p.Matches)
@@ -38,7 +40,10 @@ public class SendRatingHandler(
             int diff = (int)((higher.Rating - gamer.Rating) * 100);
             var higherPlace = place - 1;
             above = $"{higherPlace.ToEmojiPosition()} @{higher.Login} • 🌟 Рейтинг: {higher.Rating * 100:F0} <code>({(diff >= 0 ? "+" : "")}{diff}*)</code>";
-            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"🌟 {higher.Login}", $"/rating @{higher.Login}"));
+            
+            if (!request.ByDay)
+                inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData(
+                    $"🌟 {higher.Login}", $"/rating @{higher.Login}"));
         }
 
         if (place < allGamers.Length)
@@ -47,12 +52,18 @@ public class SendRatingHandler(
             int diff = (int)((lower.Rating - gamer.Rating) * 100);
             var lowerPlace = place + 1;
             below = $"{lowerPlace.ToEmojiPosition()} @{lower.Login} • 🌟 Рейтинг: {lower.Rating * 100:F0} <code>({diff}*)</code>";
-            inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData($"🌟 {lower.Login}", $"/rating @{lower.Login}"));
+            
+            if (!request.ByDay)
+                inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData(
+                    $"🌟 {lower.Login}", $"/rating @{lower.Login}"));
         }
 
+        var matches = gamer.Matches
+            .Where(p => p.Date.HasValue && (!request.ByDay || p.Date.Value.Date == DateTimeOffset.UtcNow.Date))
+            .ToArray();
+        
         // Группировка матчей по противникам
-        var statsByOpponent = gamer.Matches
-            .Where(m => !m.IsPending)
+        var statsByOpponent = matches 
             .GroupBy(m => m.Opponent(gamer))
             .Select(g => new
             {
@@ -76,9 +87,9 @@ public class SendRatingHandler(
         int pointsDiff = totalPointsWon - totalPointsLost;
 
         // Самый длинный победный и проигрышный серия
-        var results = gamer.Matches
-            .Where(m => !m.IsPending)
-            .Select(m => m.LastWinner == gamer);
+        var results = matches
+            .Where(p => p.Date.HasValue)
+            .Select(p => p.LastWinner == gamer);
 
         int longestWinStreak = 0, currentWinStreak = 0;
         int longestLossStreak = 0, currentLossStreak = 0;
@@ -102,25 +113,45 @@ public class SendRatingHandler(
         // Формирование сообщения
         var opponentsView = string.Join("\n", statsByOpponent.Select(s =>
         {
+            if (request.ByDay)
+                inlineKeyboard.Add(InlineKeyboardButton.WithCallbackData(
+                    $"@{gamer.Login} 🆚 {s.Opponent.Login}", $"/rating @{gamer.Login} @{s.Opponent.Login}"));
+            
             var opponentPlace = Array.IndexOf(allGamers, s.Opponent) + 1;
             var subPoints = s.PointsWon - s.PointsLost;
             return $"{opponentPlace.ToEmojiPosition()} @{s.Opponent.Login}: <b> {s.Wins} — {s.Losses} </b> <code>({(subPoints >= 0 ? "+" : "-")}{Math.Abs(subPoints / (float)s.SetsCount):F2} ●/⚔️)</code>";
         }));
+        
+        var dayPreview = !request.ByDay
+            ?"":
+            """
+            Привет! Лови свои успехи за день 😉
+            
+            """;
+
+        var viewDetail = !request.ByDay
+            ?"":
+            """
+
+            
+            Смотри детальную статистику по соперникам 👇
+            """;
 
         await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
+             {dayPreview}
              В общем зачёте:
              {above ?? ""}
              <u>{place.ToEmojiPosition()} @{gamer.Login} • 🌟 Рейтинг: {gamer.Rating * 100:F0}</u>
              {below ?? ""}
 
-             🏓 Всего матчей: {totalWins + totalLosses}
+             🏓 {(request.ByDay ? "Матчей за день" : "Всего матчей")}: {totalWins + totalLosses}
              📈 Побед: {totalWins} | Поражений: {totalLosses}
               ⬤/⚔️ : <code>{(pointsDiff >= 0 ? "+" : "-")}{Math.Abs(pointsDiff / (float)totalSetsCount):F2}●</code>
              🔁 Серии: побед {longestWinStreak}, проигрышей {longestLossStreak}
 
              Статистика по соперникам:
-             {opponentsView}
+             {opponentsView}{viewDetail}
              """, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
     }
 }

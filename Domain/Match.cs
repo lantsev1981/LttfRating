@@ -3,7 +3,6 @@
 public record Match(byte SetWonCount = 3)
 {
     public Guid Id { get; init; }
-    public bool IsPending { get; set; } = true;
     public required List<Gamer> Gamers { get; init; }
     public SortedSet<Set> Sets { get; init; } = [];
 
@@ -21,6 +20,5 @@ public record Match(byte SetWonCount = 3)
     public int LoserSetCount =>
         Sets.Count(p => p.WinnerLogin == LastLoser.Login);
 
-    public DateTimeOffset Date =>
-        Sets.LastOrDefault()?.Date ?? DateTimeOffset.MinValue;
+    public DateTimeOffset? Date { get; set; }
 }

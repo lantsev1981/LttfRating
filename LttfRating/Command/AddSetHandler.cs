@@ -34,7 +34,7 @@ public class AddSetHandler(
 
         match.Sets.Add(set);
 
-        var needCalculate = match.Sets.Count(p => p.WinnerLogin == winner) == match.SetWonCount;
+        var needCalculate = match.Sets.Count(p => p.WinnerLogin == winner) >= match.SetWonCount;
         var oldRatings = new Dictionary<string, float>
         {
             { winner, match.LastWinner.Rating },
@@ -50,7 +50,7 @@ public class AddSetHandler(
             match.ReCalculateRating(ratings);
             match.LastWinner.Rating = ratings[winner];
             match.LastLoser.Rating = ratings[loser];
-            match.IsPending = false;
+            match.Date = set.Date;
         }
 
         await store.Update(token);

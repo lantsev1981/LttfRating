@@ -33,7 +33,7 @@ public class SendResultHandler(
              ⚔️ По партиям:  {match.WinnerSetCount} — {match.LoserSetCount}
              """, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
 
-        if (!match.IsPending)
+        if (match.Date.HasValue)
         {
             inlineKeyboard =
             [

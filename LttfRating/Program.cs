@@ -51,6 +51,7 @@ class Program
                             }
                         ))
                     .AddHostedService<TelegramInputBackgroundService>()
+                    .AddHostedService<SendDayStatisticsBackgroundService>()
                     .AddHostedService<BotService>();
             })
             .UseSerilog((hostContext, loggerConfiguration) =>

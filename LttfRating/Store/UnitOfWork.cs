@@ -2,7 +2,7 @@
 
 public interface IUnitOfWork
 {
-    IGamerStore GameStore { get; }
+    IGamerStore GamerStore { get; }
     IDomainStore<Match> MatchStore { get; }
     IDomainStore<Set> SetStore { get; }
     IDomainStore<TelegramInput> TelegramInputStore { get; }
@@ -11,12 +11,12 @@ public interface IUnitOfWork
 
 public class UnitOfWork(
     AppDbContext context,
-    IGamerStore gameStore,
+    IGamerStore gamerStore,
     IDomainStore<Match> matchStore,
     IDomainStore<Set> setStore,
     IDomainStore<TelegramInput> telegramInputStore) : IUnitOfWork
 {
-    public IGamerStore GameStore { get; } = gameStore;
+    public IGamerStore GamerStore { get; } = gamerStore;
     public IDomainStore<Match> MatchStore { get; } = matchStore;
     public IDomainStore<Set> SetStore { get; } = setStore;
     public IDomainStore<TelegramInput> TelegramInputStore { get; } = telegramInputStore;

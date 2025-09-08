@@ -77,7 +77,7 @@ public class TelegramInputBackgroundService(
         // добавляем пользователя
         if (await mediator.Send(new AddGamerCommand(item.Sender.Login, item.Sender.Id), token))
         {
-            var admin = await store.GameStore.GetAdminGamerId(token);
+            var admin = await store.GamerStore.GetAdminGamerId(token);
 
             if (admin?.UserId is not null)
             {
@@ -118,7 +118,7 @@ public class TelegramInputBackgroundService(
                     """, FileName: "LttfRatingBotQr.jpg"), token);
                 break;
             case CommandType.GetRating:
-                await mediator.Send(new SendRatingQuery(item), token);
+                await mediator.Send(new SendRatingQuery(item, false), token);
                 break;
             case CommandType.CompareRating:
                 await mediator.Send(new SendCompareQuery(item), token);

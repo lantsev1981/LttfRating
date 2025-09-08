@@ -9,12 +9,13 @@ public class SendRatingEventHandler(
 {
     public async Task Handle(SendRatingEventQuery request, CancellationToken token)
     {
-        var gamer1 = await store.GameStore.GetByKey(request.Gamers[0], token)
+        var gamer1 = await store.GamerStore.GetByKey(request.Gamers[0], token)
                      ?? throw new ValidationException($"@{request.Gamers[0]} - пока нет в рейтинге");
-        var gamer2 = await store.GameStore.GetByKey(request.Gamers[1], token)
+        var gamer2 = await store.GamerStore.GetByKey(request.Gamers[1], token)
                      ?? throw new ValidationException($"@{request.Gamers[1]} - пока нет в рейтинге");
 
         var matches = await store.MatchStore.GetItems(token, m => m
+            .Where(p => p.Date.HasValue)
             .Include(p => p.Gamers)
             .Include(p => p.Sets)
             .Where(p => p.Gamers.Contains(gamer1) && p.Gamers.Contains(gamer2)));
@@ -30,7 +31,7 @@ public class SendRatingEventHandler(
         if (request.OldRatings[gamer2.Login] >= request.OldRatings[gamer1.Login] && gamer2.Rating <= gamer1.Rating)
         {
             improvements.Add($"по рейтингу 🌟 в общем зачёте <code>({(newCompare.SubRating >= 0 ? "+" : "")}{newCompare.SubRating * 100:F0}*)</code>");
-            var users = await store.GameStore.GetItems(token);
+            var users = await store.GamerStore.GetItems(token);
             newRatingPosition = Array.IndexOf(users, gamer1) + 1;
         }
         if (oldCompare.SubWins <= 0 && newCompare.SubWins > 0)

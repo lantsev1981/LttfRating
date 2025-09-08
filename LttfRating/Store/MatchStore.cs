@@ -30,10 +30,10 @@ public class MatchStore(AppDbContext context) : IDomainStore<Match>
             query = includeQuery(query);
 
         var matches =  await query
-            .Where(p => !p.IsPending)
+            .OrderBy(p => p.Date)
             .ToArrayAsync(token);
         
-        return matches.OrderByDate().ToArray();
+        return matches.ToArray();
     }
 
     public Task AddAsync(Match item, CancellationToken token)

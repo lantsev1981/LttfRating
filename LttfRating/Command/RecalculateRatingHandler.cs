@@ -10,15 +10,16 @@ public class RecalculateRatingHandler(
 {
     public async Task Handle(RecalculateRatingCommand request, CancellationToken token)
     {
-        var admin = await store.GameStore.GetAdminGamerId(token);
+        var admin = await store.GamerStore.GetAdminGamerId(token);
         if (admin?.Login != request.Input.Sender.Login)
             throw new Exception($"[@{request.Input.Sender.Login}] пересчёт рейтинга может вызвать только администратор");
 
-        var gamers = await store.GameStore.GetItems(token);
+        var gamers = await store.GamerStore.GetItems(token);
         foreach (var gamer in gamers)
             gamer.Rating = 1;
 
-        var matches = await store.MatchStore.GetItems(token, q => q
+        var matches = await store.MatchStore.GetItems(token, m => m
+            .Where(p => p.Date.HasValue)
             .Include(p => p.Gamers)
             .Include(p => p.Sets));
 

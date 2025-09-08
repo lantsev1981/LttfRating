@@ -13,9 +13,5 @@ public class TelegramInputsConfiguration : IEntityTypeConfiguration<TelegramInpu
             sb.Property(s => s.Id).HasColumnName("SenderId");
             sb.Property(s => s.Login).HasColumnName("SenderLogin").HasMaxLength(32);
         });
-
-        builder
-            .Property(p => p.UpdateType)
-            .HasMaxLength(24);
     }
 }

@@ -40,7 +40,7 @@ public class DeleteSetHandler(
 
             var winner = set.Match.LastWinner;
             var loser = set.Match.LastLoser;
-            var admin = await store.GameStore.GetAdminGamerId(token);
+            var admin = await store.GamerStore.GetAdminGamerId(token);
 
             // если последняя партия в матче, удаляем матч
             if (set.Match.Sets.Count == 1)
@@ -50,8 +50,8 @@ public class DeleteSetHandler(
             // если не последняя партия в матче, удалям партию
             else
             {
-                var needRecalculateRating = !set.Match.IsPending;
-                set.Match.IsPending = true;
+                var needRecalculateRating = set.Match.Date.HasValue;
+                set.Match.Date = null;
                 await store.SetStore.DeleteItem(set, token);
 
                 // если матч был закрыт, то пересчитываем рейтинг

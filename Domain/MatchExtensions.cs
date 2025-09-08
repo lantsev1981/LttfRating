@@ -2,11 +2,6 @@
 
 public static class MatchExtensions
 {
-    public static IEnumerable<Match> OrderByDate(this IEnumerable<Match> items)
-    {
-        return items.OrderBy(p => p.Date);
-    }
-
     public static void ReCalculateRating(this Match match, Dictionary<string, float> ratings)
     {
         if (ratings.Count != 2)

@@ -17,6 +17,7 @@ public class MatchesConfiguration: IEntityTypeConfiguration<Match>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasIndex(p => p.IsPending);
+            .HasIndex(p => p.Date)
+            .IsUnique();
     }
 }
