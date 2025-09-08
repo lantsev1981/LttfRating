@@ -5,6 +5,7 @@ public record SendMessageQuery(
     string MessageText,
     int? MessageId = null,
     string? FileName = null,
+    bool DisableNotification = true,
     InlineKeyboardMarkup? Buttons = null)
     : IRequest;
 
@@ -26,6 +27,7 @@ public class SendMessageHandler(
                     parseMode: ParseMode.Html,
                     caption: request.MessageText,
                     replyMarkup: request.Buttons,
+                    disableNotification: request.DisableNotification,
                     cancellationToken: token);
 
                 return;
@@ -47,6 +49,7 @@ public class SendMessageHandler(
                 parseMode: ParseMode.Html,
                 text: request.MessageText,
                 replyMarkup: request.Buttons,
+                disableNotification: request.DisableNotification,
                 cancellationToken: token);
         }
         catch (Exception e)

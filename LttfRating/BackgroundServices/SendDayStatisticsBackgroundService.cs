@@ -11,7 +11,7 @@ public class SendDayStatisticsBackgroundService(
         var store = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         
         var now = DateTimeOffset.UtcNow;
-        var twoHoursAgo = now.AddMinutes(-2);
+        var twoHoursAgo = now.AddHours(-1);
 
         var matches = await store.MatchStore.GetItems(token, m => m
             .Where(p => p.Date.HasValue && p.Date!.Value.Date == now.Date && p.Date <= twoHoursAgo)

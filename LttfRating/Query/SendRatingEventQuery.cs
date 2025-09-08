@@ -64,7 +64,7 @@ public class SendRatingEventHandler(
         ];
 
         await mediator.Send(new SendMessageQuery(request.Input.ChatId,
-            message, Buttons: new InlineKeyboardMarkup(inlineKeyboard)), token);
+            message, Buttons: new InlineKeyboardMarkup(inlineKeyboard), DisableNotification: false), token);
         
         if (newRatingPosition <= 3)
         {
@@ -73,7 +73,7 @@ public class SendRatingEventHandler(
                  {newRatingPosition.Value.ToEmojiPosition()} @{gamer1.Login} общем зачёте!
                  """, Buttons: new InlineKeyboardMarkup(
                     InlineKeyboardButton.WithCallbackData($"🌟 {gamer1.Login}",
-                        $"/rating @{gamer1.Login}"))), token);
+                        $"/rating @{gamer1.Login}")), DisableNotification: false), token);
         }
     }
 }

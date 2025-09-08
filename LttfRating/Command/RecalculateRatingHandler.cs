@@ -61,6 +61,6 @@ public class RecalculateRatingHandler(
         await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
              ⚠️ <b>Рейтинг пересчитан</b>
-             """), token);
+             """, DisableNotification: false), token);
     }
 }

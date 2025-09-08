@@ -49,11 +49,11 @@ public class TelegramInputBackgroundService(
                 if (!string.IsNullOrWhiteSpace(messageText))
                 {
                     await mediator.Send(new SendMessageQuery(item.ChatId,
-                        messageText, MessageId: item.MessageId), token);
+                        messageText, MessageId: item.MessageId, DisableNotification: false), token);
                 }
 
                 await mediator.Send(new SendMessageQuery(item.ChatId,
-                    "🤬", MessageId: item.MessageId), token);
+                    "🤬", MessageId: item.MessageId, DisableNotification: false), token);
             }
 
             await store.TelegramInputStore.DeleteItem(item, token);
@@ -88,7 +88,7 @@ public class TelegramInputBackgroundService(
 
                      ├ ID: <code>{item.Sender.Id}</code>
                      └ Логин: @{item.Sender.Login}
-                     """), token);
+                     """, DisableNotification: false), token);
 
                 // ├ Имя: {data.User.BaseUser.FirstName}
                 // ├ Фамилия: {data.User.BaseUser.LastName ?? "-"}
@@ -115,7 +115,7 @@ public class TelegramInputBackgroundService(
                     Если есть вопросы — пишите <a href="https://t.me/lantsev1981">создатею</a>
                     Если хочешь поучаствовать в разработке или просто позырить <a href="https://github.com/lantsev1981/LttfRating">код</a>
                     Если хочешь поблагодарить <a href="https://www.tbank.ru/cf/1k4w2TmaoyE">кликай</a> или сканируй QR-code
-                    """, FileName: "LttfRatingBotQr.jpg"), token);
+                    """, FileName: "LttfRatingBotQr.jpg", DisableNotification: false), token);
                 break;
             case CommandType.GetRating:
                 await mediator.Send(new SendRatingQuery(item, false), token);
