@@ -59,7 +59,7 @@ public class SendRatingHandler(
         }
 
         var matches = gamer.Matches
-            .Where(p => p.Date.HasValue && (!request.ByDay || p.Date.Value.Date == DateTimeOffset.UtcNow.Date))
+            .Where(p => p.Date.HasValue && (!request.ByDay || !gamer.LastSendStatistics.HasValue || p.Date > gamer.LastSendStatistics))
             .ToArray();
         
         // Группировка матчей по противникам
@@ -136,7 +136,7 @@ public class SendRatingHandler(
 
               Смотри детальную статистику по соперникам 👇
               """;
-
+        
         await mediator.Send(new SendMessageQuery(request.Input.ChatId,
             $"""
              {dayPreview}
@@ -153,7 +153,7 @@ public class SendRatingHandler(
              Статистика по соперникам:
              {opponentsView}{viewDetail}
              """, Buttons: request.ByDay
-                ? new InlineKeyboardMarkup(new[] { inlineKeyboard.Select(p => p).ToArray() })
+                ? new InlineKeyboardMarkup(inlineKeyboard.Select(p => new[] { p }).ToArray())
                 : new InlineKeyboardMarkup(inlineKeyboard)), token);
     }
 }
